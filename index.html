@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ficha de Membresía - Santa Ana Country Club</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            .print\:hidden {
+                display: none !important;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script type="text/babel">
+        const { useState } = React;
+        const { User, Phone, Mail, MapPin, Users, Building, FileText, Download, Edit3, Save } = lucide;
+
+        const MembershipProfileCard = () => {
+            const [isEditing, setIsEditing] = useState(false);
+            
+            const [formData, setFormData] = useState({
+                fechaSolicitud: '13 de Octubre, 2025',
+                producto: 'DISCOVERY',
+                ejecutivoVentas: 'Adrián Ovares',
+                tipoMembresia: 'Persona Jurídica',
+                referidoPor: 'Socio del Club',
+                
+                nombrePrincipal: 'Ana Azarrulla Peñasco',
+                ocupacionPrincipal: 'Ama de Casa',
+                fechaNacimientoPrincipal: '26 de Agosto, 1980',
+                edadPrincipal: '45',
+                nacionalidadPrincipal: 'España',
+                pasaportePrincipal: 'PAT865696',
+                telefonoPrincipal: '+506 8822 9449',
+                emailPrincipal: 'ana@tas-sl.es',
+                direccion: 'La Guácima, Alajuela - Hacienda los Reyes, Condominio Las Vueltas Casa 6B9',
+                tiempoCostaRica: '1 año',
+                estadoCivil: 'Casada',
+                
+                nombreConyuge: 'Jonathan Carbonell Fuente',
+                edadConyuge: '48',
+                nacionalidadConyuge: 'España',
+                pasaporteConyuge: 'PAJ884499',
+                telefonoConyuge: '+34 699 91 4799',
+                ocupacionConyuge: 'Inversor Independiente',
+                
+                hijo1Nombre: 'Joan Carbonell Azarrulla',
+                hijo1Edad: '13',
+                hijo1Pasaporte: 'PA0054145',
+                hijo2Nombre: 'Martina Carbonell Azarrulla',
+                hijo2Edad: '10',
+                hijo2Pasaporte: 'PAM159751',
+                hijo3Nombre: 'Lola Carbonell Azarrulla',
+                hijo3Edad: '6',
+                hijo3Pasaporte: 'PA032856',
+                institucionEducativa: 'Country Day School Costa Rica',
+                
+                nombreSociedad: 'NEO JML Sociedad de Responsabilidad Limitada',
+                cedulaJuridica: '3-102-933314',
+                
+                ref1Nombre: 'Roxana Zuñiga',
+                ref1Empresa: 'Empresa Farmacéutica',
+                ref1Tel: '+506 8714 4619',
+                ref2Nombre: 'Milton Aranguren',
+                ref2Empresa: 'Empresa Financiera',
+                ref2Tel: '+506 8563 3230',
+                ref3Nombre: 'Paula',
+                ref3Empresa: 'Abogada',
+                ref3Tel: '+506 8867 0872',
+                ref4Nombre: 'Marcia',
+                ref4Empresa: 'Socia del Club',
+                ref4Tel: '+506 8704 2061',
+            });
+
+            const handleChange = (field, value) => {
+                setFormData(prev => ({ ...prev, [field]: value }));
+            };
+
+            const handlePrint = () => {
+                window.print();
+            };
+
+            const EditableField = ({ value, field, className = '' }) => {
+                if (isEditing) {
+                    return React.createElement('input', {
+                        type: 'text',
+                        value: value,
+                        onChange: (e) => handleChange(field, e.target.value),
+                        className: `w-full px-2 py-1 border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`
+                    });
+                }
+                return React.createElement('span', { className }, value);
+            };
+
+            return (
+                <div className="w-full max-w-5xl mx-auto bg-white">
+                    {/* Botones de acción */}
+                    <div className="flex gap-3 mb-4 print:hidden">
+                        <button
+                            onClick={() => setIsEditing(!isEditing)}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                        >
+                            {React.createElement(isEditing ? Save : Edit3, { size: 18 })}
+                            <span>{isEditing ? 'Guardar Cambios' : 'Editar Ficha'}</span>
+                        </button>
+                        <button
+                            onClick={handlePrint}
+                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
+                        >
+                            {React.createElement(Download, { size: 18 })}
+                            <span>Exportar como PDF</span>
+                        </button>
+                    </div>
+
+                    {/* Contenido de la ficha */}
+                    <div className="p-8 shadow-lg">
+                        {/* Header */}
+                        <div className="border-b-4 border-emerald-600 pb-4 mb-6">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h1 className="text-3xl font-bold text-gray-800">SANTA ANA COUNTRY CLUB</h1>
+                                    <p className="text-lg text-emerald-600 font-semibold mt-1">FICHA DE SOLICITUD DE MEMBRESÍA</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm text-gray-600">Fecha de Solicitud</p>
+                                    <p className="text-lg font-semibold">
+                                        {React.createElement(EditableField, { value: formData.fechaSolicitud, field: 'fechaSolicitud' })}
+                                    </p>
+                                    <p className="text-sm text-emerald-600 font-semibold mt-1">
+                                        Producto: {React.createElement(EditableField, { value: formData.producto, field: 'producto' })}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Photos and Basic Info */}
+                        <div className="grid grid-cols-3 gap-6 mb-6">
+                            {/* Socia Principal */}
+                            <div className="bg-gray-50 p-4 rounded-lg border-2 border-emerald-200">
+                                <div className="h-48 rounded-lg mb-3 overflow-hidden relative bg-gradient-to-br from-emerald-100 to-emerald-50 flex items-center justify-center">
+                                    {React.createElement(User, { size: 64, className: 'text-emerald-600' })}
+                                    <div className="absolute bottom-0 left-0 right-0 bg-emerald-600 bg-opacity-90 py-1">
+                                        <p className="text-xs font-semibold text-white text-center">SOCIA PRINCIPAL</p>
+                                    </div>
+                                </div>
+                                <h3 className="font-bold text-gray-800 text-center">
+                                    {React.createElement(EditableField, { value: formData.nombrePrincipal, field: 'nombrePrincipal' })}
+                                </h3>
+                                <p className="text-xs text-gray-600 text-center">
+                                    {React.createElement(EditableField, { value: formData.ocupacionPrincipal, field: 'ocupacionPrincipal' })}
+                                </p>
+                            </div>
+
+                            {/* Cónyuge */}
+                            <div className="bg-gray-50 p-4 rounded-lg border-2 border-blue-200">
+                                <div className="h-48 rounded-lg mb-3 overflow-hidden relative bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center">
+                                    {React.createElement(User, { size: 64, className: 'text-blue-600' })}
+                                    <div className="absolute bottom-0 left-0 right-0 bg-blue-600 bg-opacity-90 py-1">
+                                        <p className="text-xs font-semibold text-white text-center">CÓNYUGE</p>
+                                    </div>
+                                </div>
+                                <h3 className="font-bold text-gray-800 text-center">
+                                    {React.createElement(EditableField, { value: formData.nombreConyuge, field: 'nombreConyuge' })}
+                                </h3>
+                                <p className="text-xs text-gray-600 text-center">
+                                    {React.createElement(EditableField, { value: formData.ocupacionConyuge, field: 'ocupacionConyuge' })}
+                                </p>
+                            </div>
+
+                            {/* Quick Stats */}
+                            <div className="space-y-3">
+                                <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+                                    <p className="text-xs text-gray-600 mb-1">Ejecutivo de Ventas</p>
+                                    <p className="font-bold text-emerald-700">
+                                        {React.createElement(EditableField, { value: formData.ejecutivoVentas, field: 'ejecutivoVentas' })}
+                                    </p>
+                                </div>
+                                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                                    <p className="text-xs text-gray-600 mb-1">Tipo de Membresía</p>
+                                    <p className="font-bold text-blue-700">
+                                        {React.createElement(EditableField, { value: formData.tipoMembresia, field: 'tipoMembresia' })}
+                                    </p>
+                                </div>
+                                <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                                    <p className="text-xs text-gray-600 mb-1">Referido por</p>
+                                    <p className="font-bold text-purple-700">
+                                        {React.createElement(EditableField, { value: formData.referidoPor, field: 'referidoPor' })}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Resto del contenido similar... */}
+                        <div className="text-center text-xs text-gray-500 mt-6">
+                            <p>Documento generado para el Comité de Admisiones - Santa Ana Country Club</p>
+                            <p>Información confidencial - Uso exclusivo interno</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(MembershipProfileCard));
+    </script>
+</body>
+</html>
