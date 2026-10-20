@@ -13,8 +13,7 @@ say() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 ask() { # ask VAR "pregunta" [secreto]
   local var="$1" prompt="$2" secret="${3:-}" value="${!1:-}"
   if [ -z "$value" ]; then
-    if [ -n "$secret" ]; then read -r -s -p "$prompt: " value; echo
-    else read -r -p "$prompt: " value; fi
+    read -r -p "$prompt: " value
   fi
   printf -v "$var" '%s' "$value"
 }
@@ -50,10 +49,11 @@ GOOGLE (para iniciar sesión): en https://console.cloud.google.com crea un
     http://localhost:3001/api/auth/callback/google
 Activa las APIs de Gmail y Google Calendar, y añade tu correo como usuario de prueba.
 TXT
-  ask DATABASE_URL "Neon connection string" secret
+  ask DATABASE_URL "Neon connection string"
+  DATABASE_URL="${DATABASE_URL//&channel_binding=require/}"
   ask ALLOWED_SIGN_IN "Tu correo de Google (quién puede entrar)"
   ask GOOGLE_CLIENT_ID "Google Client ID"
-  ask GOOGLE_CLIENT_SECRET "Google Client Secret" secret
+  ask GOOGLE_CLIENT_SECRET "Google Client Secret"
 
   say "4/6 Escribiendo .env"
   cp .env.example .env
