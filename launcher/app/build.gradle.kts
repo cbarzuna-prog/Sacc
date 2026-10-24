@@ -12,8 +12,8 @@ android {
         minSdk = 26
         // La TV objetivo es Android 11 (API 30).
         targetSdk = 30
-        versionCode = 6
-        versionName = "0.4.1"
+        versionCode = 7
+        versionName = "0.4.2"
     }
 
     signingConfigs {
