@@ -86,7 +86,7 @@ class AppAdapter(
             v.clipToOutline = clip
         }
         v.elevation = if (shadow) h * 0.06f else 0f
-        return VH(v, w, h)
+        return VH(v, w, h, large)
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
@@ -96,7 +96,8 @@ class AppAdapter(
     inner class VH(
         private val card: ImageView,
         private val w: Int,
-        private val h: Int
+        private val h: Int,
+        private val large: Boolean
     ) : RecyclerView.ViewHolder(card) {
 
         init {
@@ -123,25 +124,27 @@ class AppAdapter(
         }
 
         fun bind(app: AppInfo) {
-            loader.load(app, card, w, h)
+            loader.load(app, card, w, h, large)
             applyState(card.hasFocus(), false)
         }
 
-        /** Foco = crece y se enciende; el resto se atenua un poco (barato: solo escala y alfa). */
+        /**
+         * Foco = crece y se muestra a pleno brillo; el resto se oscurece (filtro de color negro
+         * semitransparente: la tarjeta sigue opaca, no deja ver el fondo a traves).
+         */
         private fun applyState(focused: Boolean, animate: Boolean) {
             val pkg = items.getOrNull(bindingAdapterPosition)?.pkg
             val moving = movingPkg != null && pkg == movingPkg
             val scale = if (moving) 1.14f else if (focused) 1.1f else 1f
-            val alpha = if (focused || moving) 1f else DIM_ALPHA
             val lift = if (shadow && (focused || moving)) h * 0.3f else 0f
+            if (focused || moving) card.clearColorFilter() else card.setColorFilter(DIM_COLOR)
             if (animate) {
-                card.animate().scaleX(scale).scaleY(scale).alpha(alpha).translationZ(lift)
+                card.animate().scaleX(scale).scaleY(scale).translationZ(lift)
                     .setDuration(140).start()
             } else {
                 card.animate().cancel()
                 card.scaleX = scale
                 card.scaleY = scale
-                card.alpha = alpha
                 card.translationZ = lift
             }
         }
@@ -150,6 +153,7 @@ class AppAdapter(
     companion object {
         private const val TYPE_LARGE = 0
         private const val TYPE_SMALL = 1
-        private const val DIM_ALPHA = 0.72f
+        /** Negro al ~30 %: oscurece las tarjetas sin foco. */
+        private const val DIM_COLOR = 0x4D000000
     }
 }

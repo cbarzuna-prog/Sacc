@@ -53,14 +53,16 @@ La app lee parametros solo al arrancar; `-S` reinicia el proceso:
 
 ## Resultados (TV real, Xiaomi MiTV-MOOQ2)
 
-| Medida | Google TV launcher | Projectivy (mejor caso) | Inicio TV v0.1 |
-|---|---|---|---|
-| PSS en reposo | 98,9 MB | 136 MB (174-250 MB con otras opciones) | 76,9 MB |
-| Servicios activos | n/a | 0 | 0 |
-| Frames medidos | 130 | por medir | 222 |
-| Janky | 2,3 % | por medir | 21,6 % |
-| p50 / p90 / p99 | 5 / 6 / 19 ms | por medir | 14 / 17 / 30 ms |
-| Dibujo lento | 1 | por medir | 20 |
-| Arranque en caliente | 321 ms (1 muestra valida) | por medir | por medir |
+Prueba de fluidez: 30 teclas por ADB, mismo patron en todos. Una corrida por launcher.
 
-La v0.1 usa menos memoria pero es menos fluida que el launcher de Google. La v0.2 permite aislar la causa con las variantes de arriba.
+| Medida | Google TV launcher | Projectivy (mejor caso) | Inicio TV v0.1 | Inicio TV v0.4.0 |
+|---|---|---|---|---|
+| PSS en reposo | 98,9 MB | 136 MB (174-250 MB con otras opciones) | 76,9 MB | 74,9 MB |
+| Servicios activos | n/a | 0 | 0 | 0 |
+| Frames medidos | 130 | por medir | 222 | 244 |
+| Janky | 2,3 % | por medir | 21,6 % | 0 % |
+| p50 / p90 / p99 | 5 / 6 / 19 ms | por medir | 14 / 17 / 30 ms | 5 / 5 / 7 ms |
+| Dibujo lento | 1 | por medir | 20 | 0 |
+| Arranque en caliente | 321 ms (1 muestra valida) | por medir | por medir | por medir |
+
+Conclusion: lo que hacia lento a Inicio TV v0.1 eran las sombras por elevacion y el recorte de esquinas en tiempo real. Con tarjetas horneadas y solo escala (v0.4.0) la navegacion mide mejor que el launcher de Google en esta prueba y usa menos memoria. Limites: una corrida, teclas inyectadas por ADB, 30 pulsaciones; no sustituye la sensacion con el mando.

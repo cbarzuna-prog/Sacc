@@ -17,8 +17,8 @@ Inspirada en los principios de tvOS (foco claro, profundidad, calma visual). No 
 | Jerarquia | Titulo de 40 sp con el nombre de la app enfocada, y debajo la seccion ("Favoritas" o "Todas las apps"). Reloj ligero a la derecha |
 | Favoritas | 3 tarjetas grandes en la primera fila (las 3 primeras de tu orden) |
 | Resto de apps | Cuadricula de 5 por fila con tarjetas pequenas |
-| Tarjeta | Tratamiento uniforme: tarjeta oscura con degradado vertical, ligero tinte del color medio del logo, borde de luz fino y el logo centrado (56 % del alto). Si el logo es oscuro y transparente se usa una placa clara para que no desaparezca. Todo horneado en un bitmap |
-| Foco | La tarjeta enfocada escala 1,10 y se enciende al 100 %; las demas quedan al 72 % de opacidad. Solo escala y alfa, sin sombras ni desenfoque en tiempo real |
+| Tarjeta | Tratamiento uniforme: tarjeta oscura con degradado vertical, ligero tinte del color medio del logo, borde de luz fino y el logo centrado (56 % del alto). Si el logo es oscuro y transparente se usa una placa clara para que no desaparezca; los iconos cuadrados a sangre se redondean. Las tarjetas grandes llevan ademas el nombre de la app horneado debajo del logo. Todo horneado en un bitmap |
+| Foco | La tarjeta enfocada escala 1,10 y se ve a pleno brillo; las demas se oscurecen con un filtro negro al 30 % (siguen opacas, no dejan ver el fondo). Solo escala y filtro, sin sombras ni desenfoque en tiempo real |
 | Reordenar | Pulsacion larga en OK o Menu, flechas, OK para terminar |
 | Pie | Botones "Ajustes" y "Launcher original" |
 
