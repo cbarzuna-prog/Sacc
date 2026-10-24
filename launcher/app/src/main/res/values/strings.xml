@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Inicio TV</string>
+    <string name="title_home">Inicio</string>
+    <string name="btn_settings">Ajustes</string>
+    <string name="btn_original_launcher">Launcher original</string>
+    <string name="move_hint">Modo mover: usa las flechas · OK para terminar</string>
+    <string name="move_toast">Modo mover activado</string>
+    <string name="err_launch">No se pudo abrir la app</string>
+    <string name="err_original_launcher">No se encontró el launcher original</string>
+</resources>
