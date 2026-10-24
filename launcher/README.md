@@ -2,7 +2,7 @@
 
 Launcher nativo en Kotlin para Android TV 11 (API 30), pensado para una TV con ~1,7 GB de RAM y ARMv7 de 32 bits.
 
-**Estado: v0.3.0 (fila de favoritas y fondo nuevo). Medido en la TV: usa menos memoria que el launcher de Google pero la navegacion es menos fluida (ver `docs/MEDICION.md`). En optimizacion.**
+**Estado: v0.3.1 (fila de favoritas y fondo de lineas de luz). Medido en la TV: usa menos memoria que el launcher de Google pero la navegacion es menos fluida (ver `docs/MEDICION.md`). En optimizacion.**
 
 ## Que hace (v0.3)
 
@@ -10,7 +10,7 @@ Launcher nativo en Kotlin para Android TV 11 (API 30), pensado para una TV con ~
 - Navegacion con el mando (D-pad), foco con escala y sombra, nombre de la app al enfocar.
 - Abrir apps con OK. Reordenar: pulsacion larga en OK (o la tecla Menu) y flechas; OK termina. El orden se guarda.
 - Reloj, atajo a Ajustes y atajo **Launcher original** (recuperacion).
-- Fondo estatico abstracto propio (un JPEG de 27 KB, ~2 MB en memoria).
+- Fondo estatico abstracto propio de lineas de luz (un JPEG de ~95 KB, ~3,7 MB en memoria; su efecto en la RAM esta por medir).
 - Sin servicios, sin WebView, sin sondeo permanente, sin permisos.
 
 ## Decisiones de ingenieria

@@ -13,7 +13,7 @@ Inspirada en los principios de tvOS (foco claro, profundidad, calma visual). No 
 
 | Elemento | v0.1 | Siguiente iteracion |
 |---|---|---|
-| Fondo | v0.3: arte abstracto propio (aurora oscura turquesa y violeta con haz diagonal), un JPEG de 960x540 (~27 KB), generado por `tools/gen_bg.py` | Variantes de color |
+| Fondo | v0.3.1: arte propio de cintas de lineas de luz (turquesa a violeta) sobre cielo nocturno con polvo de luz, un JPEG de 1280x720 (~95 KB, ~3,7 MB en memoria), generado por `tools/gen_bg.py` | Variantes de color |
 | Cabecera | Titulo "Inicio" y reloj 24 h | Reloj opcional (ajuste) |
 | Apps | v0.3: fila superior de 4 favoritas grandes (las 4 primeras de tu orden) y cuadricula de 5 por fila debajo, tarjetas 16:9 de esquinas redondeadas | Marcar favoritas por separado del orden |
 | Foco | Escala 1,12, elevacion, etiqueta visible solo al enfocar, animacion de 120 ms | Paralaje ligero solo si el presupuesto lo permite |
