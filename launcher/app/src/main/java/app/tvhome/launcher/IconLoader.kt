@@ -16,13 +16,12 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 /**
- * Carga perezosa de banners/iconos en segundo plano, ya reducidos al tamano de la tarjeta,
- * con una cache LRU de tamano maximo fijo (en KB). Los hilos se liberan al quedar inactivos.
+ * Carga perezosa de banners/iconos en segundo plano, ya reducidos al tamano exacto de la tarjeta
+ * (grande o pequena), con una cache LRU de tamano maximo fijo (en KB). Los hilos se liberan al
+ * quedar inactivos.
  */
 class IconLoader(
     private val pm: PackageManager,
-    private val w: Int,
-    private val h: Int,
     /** Si es true, las esquinas redondeadas se hornean en el bitmap (sin recorte por contorno). */
     private val rounded: Boolean
 ) {
@@ -36,9 +35,10 @@ class IconLoader(
 
     private val main = Handler(Looper.getMainLooper())
 
-    fun load(app: AppInfo, view: ImageView) {
-        view.tag = app.pkg
-        val cached = cache.get(app.pkg)
+    fun load(app: AppInfo, view: ImageView, w: Int, h: Int) {
+        val key = "${app.pkg}@${w}x$h"
+        view.tag = key
+        val cached = cache.get(key)
         if (cached != null) {
             view.setImageBitmap(cached)
             return
@@ -46,13 +46,13 @@ class IconLoader(
         view.setImageDrawable(null)
         executor.execute {
             val bmp = try {
-                render(app)
+                render(app, w, h)
             } catch (e: Exception) {
                 null
             }
             if (bmp != null) {
-                cache.put(app.pkg, bmp)
-                main.post { if (view.tag == app.pkg) view.setImageBitmap(bmp) }
+                cache.put(key, bmp)
+                main.post { if (view.tag == key) view.setImageBitmap(bmp) }
             }
         }
     }
@@ -62,7 +62,7 @@ class IconLoader(
         cache.evictAll()
     }
 
-    private fun render(app: AppInfo): Bitmap {
+    private fun render(app: AppInfo, w: Int, h: Int): Bitmap {
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)
         val info = app.ri.activityInfo
@@ -84,10 +84,10 @@ class IconLoader(
             icon.setBounds(left, top, left + s, top + s)
             icon.draw(canvas)
         }
-        return if (rounded) round(bmp) else bmp
+        return if (rounded) round(bmp, w, h) else bmp
     }
 
-    private fun round(src: Bitmap): Bitmap {
+    private fun round(src: Bitmap, w: Int, h: Int): Bitmap {
         val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
         paint.shader = BitmapShader(src, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
@@ -100,7 +100,7 @@ class IconLoader(
     companion object {
         /** Mismo radio relativo que usa el contorno de AppAdapter. */
         const val CORNER_RATIO = 0.14f
-        private const val CACHE_KB = 8 * 1024
+        private const val CACHE_KB = 10 * 1024
         private const val CARD_COLOR = 0xFF1E2230.toInt()
     }
 }

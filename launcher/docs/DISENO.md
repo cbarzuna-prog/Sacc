@@ -13,17 +13,17 @@ Inspirada en los principios de tvOS (foco claro, profundidad, calma visual). No 
 
 | Elemento | v0.1 | Siguiente iteracion |
 |---|---|---|
-| Fondo | Degradado estatico oscuro (azul noche a negro) con un velo diagonal tenue | Imagen cinematografica estatica opcional, reducida a la resolucion de pantalla |
+| Fondo | v0.3: arte abstracto propio (aurora oscura turquesa y violeta con haz diagonal), un JPEG de 960x540 (~27 KB), generado por `tools/gen_bg.py` | Variantes de color |
 | Cabecera | Titulo "Inicio" y reloj 24 h | Reloj opcional (ajuste) |
-| Apps | Cuadricula con tarjetas 16:9 de esquinas redondeadas | Fila superior de favoritas, mas grande, y cuadricula debajo (estilo Apple TV) |
+| Apps | v0.3: fila superior de 4 favoritas grandes (las 4 primeras de tu orden) y cuadricula de 5 por fila debajo, tarjetas 16:9 de esquinas redondeadas | Marcar favoritas por separado del orden |
 | Foco | Escala 1,12, elevacion, etiqueta visible solo al enfocar, animacion de 120 ms | Paralaje ligero solo si el presupuesto lo permite |
 | Reordenar | Pulsacion larga en OK o Menu, flechas, OK para terminar | Marcar favoritas |
 | Pie | Botones "Ajustes" y "Launcher original" | Atajo de recuperacion visible siempre |
 
 ## Medidas y color
 
-- Tarjeta: 152 x 86 dp (16:9), margen 12 dp, relleno lateral 48 dp. Las columnas se calculan segun el ancho real de pantalla (3 a 8).
-- Colores: fondo `#05060A` a `#0E1424`, tarjeta `#1E2230`, texto `#F2F4F8`, texto secundario `#9AA3B5`.
+- Tarjetas 16:9 calculadas segun el ancho real de pantalla: grandes = ancho util / 4, pequenas = ancho util / 5 (menos el margen de 10 dp por lado); relleno lateral 48 dp.
+- Colores: fondo base `#05060A`, tarjeta `#1E2230`, texto `#F2F4F8`, texto secundario `#9AA3B5`.
 - Iconos: se usa el banner de TV de cada app; si no existe, el icono cuadrado centrado sobre fondo oscuro.
 
 ## Mando

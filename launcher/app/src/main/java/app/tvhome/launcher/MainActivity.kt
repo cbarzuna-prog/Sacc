@@ -26,7 +26,6 @@ class MainActivity : Activity() {
 
     private val worker = Executors.newSingleThreadExecutor()
 
-    private var span = 5
     private var moveMode = false
     private var movingPos = -1
     private var moveStartedAt = 0L
@@ -37,25 +36,34 @@ class MainActivity : Activity() {
         setContentView(R.layout.activity_main)
         prefs = getSharedPreferences(AppRepository.PREFS, MODE_PRIVATE)
 
-        val cardW = dp(CARD_W_DP)
-        val cardH = dp(CARD_H_DP)
-        val margin = dp(ITEM_MARGIN_DP)
+        // Fila de favoritas: LARGE_PER_ROW tarjetas grandes; resto: SMALL_PER_ROW por fila.
+        val margin = dp(MARGIN_DP)
         val usable = resources.displayMetrics.widthPixels - 2 * dp(SIDE_PADDING_DP)
-        span = (usable / (cardW + 2 * margin)).coerceIn(3, 8)
+        val largeW = usable / LARGE_PER_ROW - 2 * margin
+        val smallW = usable / SMALL_PER_ROW - 2 * margin
+        val largeH = largeW * 9 / 16
+        val smallH = smallW * 9 / 16
 
         // Variables de medicion: `am start -S -n app.tvhome.launcher/.MainActivity --ez shadow false --ez clip false`
-        val shadow = intent.getBooleanExtra(EXTRA_SHADOW, true)
-        val clip = intent.getBooleanExtra(EXTRA_CLIP, true)
+        val shadow = intent.getBooleanExtra(EXTRA_SHADOW, DEFAULT_SHADOW)
+        val clip = intent.getBooleanExtra(EXTRA_CLIP, DEFAULT_CLIP)
 
-        iconLoader = IconLoader(packageManager, cardW, cardH, !clip)
+        iconLoader = IconLoader(packageManager, !clip)
         adapter = AppAdapter(
-            iconLoader, cardW, cardH, margin, shadow, clip,
+            iconLoader, LARGE_PER_ROW, largeW, largeH, smallW, smallH, margin, shadow, clip,
             { app -> launchApp(app) },
             { position -> startMove(position) }
         )
 
+        val layoutManager = GridLayoutManager(this, SPAN_COUNT)
+        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int): Int =
+                if (position < LARGE_PER_ROW) SPAN_COUNT / LARGE_PER_ROW
+                else SPAN_COUNT / SMALL_PER_ROW
+        }
+
         grid = findViewById(R.id.app_grid)
-        grid.layoutManager = GridLayoutManager(this, span)
+        grid.layoutManager = layoutManager
         grid.adapter = adapter
         grid.itemAnimator = null
         grid.setHasFixedSize(true)
@@ -75,7 +83,7 @@ class MainActivity : Activity() {
         // HOME pulsado con el launcher ya abierto: volver al inicio de la cuadricula.
         if (moveMode) endMove()
         grid.scrollToPosition(0)
-        focusFirst()
+        focusPosition(0)
     }
 
     override fun onDestroy() {
@@ -91,25 +99,21 @@ class MainActivity : Activity() {
             endMove()
         } else {
             grid.scrollToPosition(0)
-            focusFirst()
+            focusPosition(0)
         }
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN) {
             if (moveMode) {
-                val delta = when (event.keyCode) {
-                    KeyEvent.KEYCODE_DPAD_LEFT -> -1
-                    KeyEvent.KEYCODE_DPAD_RIGHT -> 1
-                    KeyEvent.KEYCODE_DPAD_UP -> -span
-                    KeyEvent.KEYCODE_DPAD_DOWN -> span
-                    else -> 0
-                }
-                if (delta != 0) {
-                    moveBy(delta)
-                    return true
-                }
                 when (event.keyCode) {
+                    KeyEvent.KEYCODE_DPAD_LEFT,
+                    KeyEvent.KEYCODE_DPAD_RIGHT,
+                    KeyEvent.KEYCODE_DPAD_UP,
+                    KeyEvent.KEYCODE_DPAD_DOWN -> {
+                        moveTo(moveTarget(movingPos, event.keyCode))
+                        return true
+                    }
                     KeyEvent.KEYCODE_DPAD_CENTER,
                     KeyEvent.KEYCODE_ENTER,
                     KeyEvent.KEYCODE_NUMPAD_ENTER -> {
@@ -147,18 +151,18 @@ class MainActivity : Activity() {
                 if (!moveMode) adapter.submit(list)
                 if (firstLoad && adapter.itemCount > 0) {
                     firstLoad = false
-                    focusFirst()
+                    focusPosition(0)
                 }
             }
         }
     }
 
-    private fun focusFirst(attempt: Int = 0) {
-        val v = grid.findViewHolderForAdapterPosition(0)?.itemView
+    private fun focusPosition(position: Int, attempt: Int = 0) {
+        val v = grid.findViewHolderForAdapterPosition(position)?.itemView
         if (v != null) {
             v.requestFocus()
         } else if (attempt < 10) {
-            grid.postDelayed({ focusFirst(attempt + 1) }, 50)
+            grid.postDelayed({ focusPosition(position, attempt + 1) }, 50)
         }
     }
 
@@ -205,13 +209,33 @@ class MainActivity : Activity() {
         moveHint.visibility = View.VISIBLE
     }
 
-    private fun moveBy(delta: Int) {
-        val target = movingPos + delta
-        if (target < 0 || target >= adapter.itemCount) return
-        adapter.move(movingPos, target)
+    /**
+     * Posicion destino al mover con una flecha. Fila 0 = favoritas (LARGE_PER_ROW grandes);
+     * filas 1.. = SMALL_PER_ROW pequenas por fila. Devuelve -1 si no hay destino.
+     */
+    private fun moveTarget(pos: Int, keyCode: Int): Int {
+        val row = if (pos < LARGE_PER_ROW) 0 else 1 + (pos - LARGE_PER_ROW) / SMALL_PER_ROW
+        val col = if (pos < LARGE_PER_ROW) pos else (pos - LARGE_PER_ROW) % SMALL_PER_ROW
+        return when (keyCode) {
+            KeyEvent.KEYCODE_DPAD_LEFT -> pos - 1
+            KeyEvent.KEYCODE_DPAD_RIGHT -> pos + 1
+            KeyEvent.KEYCODE_DPAD_UP ->
+                if (row == 0) -1
+                else if (row == 1) minOf(col, LARGE_PER_ROW - 1)
+                else LARGE_PER_ROW + (row - 2) * SMALL_PER_ROW + col
+            KeyEvent.KEYCODE_DPAD_DOWN ->
+                if (row == 0) LARGE_PER_ROW + minOf(col, SMALL_PER_ROW - 1)
+                else LARGE_PER_ROW + row * SMALL_PER_ROW + col
+            else -> -1
+        }
+    }
+
+    private fun moveTo(target: Int) {
+        if (target < 0 || target >= adapter.itemCount || target == movingPos) return
+        adapter.swap(movingPos, target)
         movingPos = target
         grid.scrollToPosition(target)
-        grid.post { grid.findViewHolderForAdapterPosition(target)?.itemView?.requestFocus() }
+        focusPosition(target)
     }
 
     private fun endMove() {
@@ -223,7 +247,10 @@ class MainActivity : Activity() {
         val pos = movingPos
         movingPos = -1
         adapter.movingPkg = null
-        if (pos in 0 until adapter.itemCount) adapter.notifyItemChanged(pos)
+        if (pos in 0 until adapter.itemCount) {
+            adapter.notifyItemChanged(pos)
+            focusPosition(pos)
+        }
     }
 
     private fun dp(value: Int): Int =
@@ -232,15 +259,21 @@ class MainActivity : Activity() {
         ).toInt()
 
     companion object {
-        // Deben coincidir con las medidas por defecto de res/layout/item_app.xml.
-        private const val CARD_W_DP = 152
-        private const val CARD_H_DP = 86
-        private const val ITEM_MARGIN_DP = 12
         private const val SIDE_PADDING_DP = 48
+        private const val MARGIN_DP = 10
+
+        // Cuadricula de 20 columnas virtuales: grandes ocupan 5 (4 por fila), pequenas 4 (5 por fila).
+        private const val SPAN_COUNT = 20
+        private const val LARGE_PER_ROW = 4
+        private const val SMALL_PER_ROW = 5
+
         private const val MOVE_GUARD_MS = 600L
 
         private const val EXTRA_SHADOW = "shadow"
         private const val EXTRA_CLIP = "clip"
+        // Valores por defecto de las variables de medicion (se fijan segun las pruebas A/B).
+        private const val DEFAULT_SHADOW = false
+        private const val DEFAULT_CLIP = false
 
         private const val ORIGINAL_PKG = "com.google.android.tvlauncher"
         private const val ORIGINAL_ACTIVITY = "com.google.android.tvlauncher.MainActivity"
