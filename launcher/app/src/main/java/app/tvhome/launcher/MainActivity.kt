@@ -23,6 +23,8 @@ class MainActivity : Activity() {
     private lateinit var iconLoader: IconLoader
     private lateinit var prefs: SharedPreferences
     private lateinit var moveHint: TextView
+    private lateinit var heroTitle: TextView
+    private lateinit var heroSub: TextView
 
     private val worker = Executors.newSingleThreadExecutor()
 
@@ -44,15 +46,22 @@ class MainActivity : Activity() {
         val largeH = largeW * 9 / 16
         val smallH = smallW * 9 / 16
 
-        // Variables de medicion: `am start -S -n app.tvhome.launcher/.MainActivity --ez shadow false --ez clip false`
+        // Variables de medicion: `am start -S -n app.tvhome.launcher/.MainActivity --ez shadow true --ez clip true --ez bg false`
         val shadow = intent.getBooleanExtra(EXTRA_SHADOW, DEFAULT_SHADOW)
         val clip = intent.getBooleanExtra(EXTRA_CLIP, DEFAULT_CLIP)
+        if (!intent.getBooleanExtra(EXTRA_BG, true)) {
+            findViewById<View>(R.id.bg).visibility = View.GONE
+        }
+
+        heroTitle = findViewById(R.id.hero_title)
+        heroSub = findViewById(R.id.hero_sub)
 
         iconLoader = IconLoader(packageManager, !clip)
         adapter = AppAdapter(
             iconLoader, LARGE_PER_ROW, largeW, largeH, smallW, smallH, margin, shadow, clip,
             { app -> launchApp(app) },
-            { position -> startMove(position) }
+            { position -> startMove(position) },
+            { position -> showHero(position) }
         )
 
         val layoutManager = GridLayoutManager(this, SPAN_COUNT)
@@ -166,6 +175,13 @@ class MainActivity : Activity() {
         }
     }
 
+    /** Titulo grande con el nombre de la app enfocada y a que seccion pertenece. */
+    private fun showHero(position: Int) {
+        val label = adapter.labelAt(position) ?: return
+        if (heroTitle.text.toString() != label) heroTitle.text = label
+        heroSub.setText(if (position < LARGE_PER_ROW) R.string.hero_sub_fav else R.string.hero_sub_all)
+    }
+
     private fun launchApp(app: AppInfo) {
         val info = app.ri.activityInfo
         val intent = Intent(Intent.ACTION_MAIN)
@@ -221,10 +237,10 @@ class MainActivity : Activity() {
             KeyEvent.KEYCODE_DPAD_RIGHT -> pos + 1
             KeyEvent.KEYCODE_DPAD_UP ->
                 if (row == 0) -1
-                else if (row == 1) minOf(col, LARGE_PER_ROW - 1)
+                else if (row == 1) col * LARGE_PER_ROW / SMALL_PER_ROW
                 else LARGE_PER_ROW + (row - 2) * SMALL_PER_ROW + col
             KeyEvent.KEYCODE_DPAD_DOWN ->
-                if (row == 0) LARGE_PER_ROW + minOf(col, SMALL_PER_ROW - 1)
+                if (row == 0) LARGE_PER_ROW + col * SMALL_PER_ROW / LARGE_PER_ROW
                 else LARGE_PER_ROW + row * SMALL_PER_ROW + col
             else -> -1
         }
@@ -262,15 +278,16 @@ class MainActivity : Activity() {
         private const val SIDE_PADDING_DP = 48
         private const val MARGIN_DP = 10
 
-        // Cuadricula de 20 columnas virtuales: grandes ocupan 5 (4 por fila), pequenas 4 (5 por fila).
-        private const val SPAN_COUNT = 20
-        private const val LARGE_PER_ROW = 4
+        // Cuadricula de 15 columnas virtuales: grandes ocupan 5 (3 por fila), pequenas 3 (5 por fila).
+        private const val SPAN_COUNT = 15
+        private const val LARGE_PER_ROW = 3
         private const val SMALL_PER_ROW = 5
 
         private const val MOVE_GUARD_MS = 600L
 
         private const val EXTRA_SHADOW = "shadow"
         private const val EXTRA_CLIP = "clip"
+        private const val EXTRA_BG = "bg"
         // Valores por defecto de las variables de medicion (se fijan segun las pruebas A/B).
         private const val DEFAULT_SHADOW = false
         private const val DEFAULT_CLIP = false

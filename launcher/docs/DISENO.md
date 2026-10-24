@@ -9,22 +9,24 @@ Inspirada en los principios de tvOS (foco claro, profundidad, calma visual). No 
 3. **Calma.** Fondo oscuro estatico, sin video, sin parpadeos, sin publicidad.
 4. **Barato en una TV con poca RAM.** Cada decision visual se valida contra el presupuesto de memoria.
 
-## Pantalla de inicio
+## Pantalla de inicio (v0.4)
 
-| Elemento | v0.1 | Siguiente iteracion |
-|---|---|---|
-| Fondo | v0.3.1: arte propio de cintas de lineas de luz (turquesa a violeta) sobre cielo nocturno con polvo de luz, un JPEG de 1280x720 (~95 KB, ~3,7 MB en memoria), generado por `tools/gen_bg.py` | Variantes de color |
-| Cabecera | Titulo "Inicio" y reloj 24 h | Reloj opcional (ajuste) |
-| Apps | v0.3: fila superior de 4 favoritas grandes (las 4 primeras de tu orden) y cuadricula de 5 por fila debajo, tarjetas 16:9 de esquinas redondeadas | Marcar favoritas por separado del orden |
-| Foco | Escala 1,12, elevacion, etiqueta visible solo al enfocar, animacion de 120 ms | Paralaje ligero solo si el presupuesto lo permite |
-| Reordenar | Pulsacion larga en OK o Menu, flechas, OK para terminar | Marcar favoritas |
-| Pie | Botones "Ajustes" y "Launcher original" | Atajo de recuperacion visible siempre |
+| Elemento | Decision |
+|---|---|
+| Fondo | Cintas de lineas de luz (turquesa a violeta) sobre cielo nocturno con polvo de luz. JPEG de 1280x720 (~95 KB, ~3,7 MB en memoria), generado por `tools/gen_bg.py` |
+| Jerarquia | Titulo de 40 sp con el nombre de la app enfocada, y debajo la seccion ("Favoritas" o "Todas las apps"). Reloj ligero a la derecha |
+| Favoritas | 3 tarjetas grandes en la primera fila (las 3 primeras de tu orden) |
+| Resto de apps | Cuadricula de 5 por fila con tarjetas pequenas |
+| Tarjeta | Tratamiento uniforme: tarjeta oscura con degradado vertical, ligero tinte del color medio del logo, borde de luz fino y el logo centrado (56 % del alto). Si el logo es oscuro y transparente se usa una placa clara para que no desaparezca. Todo horneado en un bitmap |
+| Foco | La tarjeta enfocada escala 1,10 y se enciende al 100 %; las demas quedan al 72 % de opacidad. Solo escala y alfa, sin sombras ni desenfoque en tiempo real |
+| Reordenar | Pulsacion larga en OK o Menu, flechas, OK para terminar |
+| Pie | Botones "Ajustes" y "Launcher original" |
 
 ## Medidas y color
 
-- Tarjetas 16:9 calculadas segun el ancho real de pantalla: grandes = ancho util / 4, pequenas = ancho util / 5 (menos el margen de 10 dp por lado); relleno lateral 48 dp.
-- Colores: fondo base `#05060A`, tarjeta `#1E2230`, texto `#F2F4F8`, texto secundario `#9AA3B5`.
-- Iconos: se usa el banner de TV de cada app; si no existe, el icono cuadrado centrado sobre fondo oscuro.
+- Tarjetas 16:9 calculadas segun el ancho real de pantalla: grandes = ancho util / 3, pequenas = ancho util / 5 (menos 10 dp de margen por lado); relleno lateral 48 dp.
+- Colores: fondo base `#05060A`, texto `#F2F4F8`, texto secundario `#9AA3B5`.
+- Tipografia: la del sistema (`sans-serif-medium` para el titulo, `sans-serif-light` para el reloj). No se empaqueta ninguna fuente para no gastar memoria.
 
 ## Mando
 

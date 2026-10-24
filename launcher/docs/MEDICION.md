@@ -44,9 +44,10 @@ Una muestra con pocos frames (menos de ~100) no es valida. Los percentiles de GP
 La app lee parametros solo al arrancar; `-S` reinicia el proceso:
 
 ```bash
-./adb shell am start -S -n app.tvhome.launcher/.MainActivity --ez shadow <true|false> --ez clip <true|false>
+./adb shell am start -S -n app.tvhome.launcher/.MainActivity --ez shadow <true|false> --ez clip <true|false> --ez bg <true|false>
 ```
 
+- `bg`: `false` oculta el fondo de imagen (para medir su coste).
 - `shadow`: sombra por elevacion al enfocar.
 - `clip`: recorte de esquinas por contorno. Con `false`, las esquinas redondeadas se hornean en el bitmap.
 

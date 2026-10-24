@@ -1,12 +1,15 @@
 package app.tvhome.launcher
 
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapShader
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Shader
+import android.graphics.drawable.Drawable
 import android.os.Handler
 import android.os.Looper
 import android.util.LruCache
@@ -16,9 +19,9 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 /**
- * Carga perezosa de banners/iconos en segundo plano, ya reducidos al tamano exacto de la tarjeta
- * (grande o pequena), con una cache LRU de tamano maximo fijo (en KB). Los hilos se liberan al
- * quedar inactivos.
+ * Prepara cada tarjeta ya "horneada": una tarjeta oscura uniforme con el logo de la app centrado.
+ * Todo el trabajo (degradado, borde de luz, tinte) se hace una vez en segundo plano y se guarda
+ * en una cache LRU de tamano maximo fijo; en pantalla solo se dibuja un bitmap.
  */
 class IconLoader(
     private val pm: PackageManager,
@@ -62,45 +65,120 @@ class IconLoader(
         cache.evictAll()
     }
 
-    private fun render(app: AppInfo, w: Int, h: Int): Bitmap {
-        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bmp)
-        val info = app.ri.activityInfo
-        val banner = try {
+    private fun loadDrawable(info: ActivityInfo): Drawable? {
+        try {
+            return info.loadIcon(pm)
+        } catch (e: Exception) {
+            // Se intenta con el banner de TV.
+        }
+        return try {
             info.loadBanner(pm)
         } catch (e: Exception) {
             null
         }
-        if (banner != null) {
-            banner.setBounds(0, 0, w, h)
-            banner.draw(canvas)
-        } else {
-            // Sin banner de TV: icono cuadrado centrado sobre fondo oscuro.
-            canvas.drawColor(CARD_COLOR)
-            val icon = info.loadIcon(pm)
-            val s = (h * 0.62f).toInt()
-            val left = (w - s) / 2
-            val top = (h - s) / 2
-            icon.setBounds(left, top, left + s, top + s)
-            icon.draw(canvas)
-        }
-        return if (rounded) round(bmp, w, h) else bmp
     }
 
-    private fun round(src: Bitmap, w: Int, h: Int): Bitmap {
-        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        paint.shader = BitmapShader(src, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
+    private fun render(app: AppInfo, w: Int, h: Int): Bitmap {
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bmp)
+        val glyph = loadDrawable(app.ri.activityInfo)?.let { rasterize(it, (h * ICON_RATIO).toInt()) }
+        val stats = glyph?.let { analyze(it) }
+
+        // Un logo oscuro y con transparencia se perderia sobre la tarjeta oscura: se usa una placa clara.
+        val light = stats != null && stats.coverage < 0.6f && stats.luminance < 0.28f
+        val top: Int
+        val bottom: Int
+        if (light) {
+            top = 0xFFF0F2F7.toInt()
+            bottom = 0xFFD3D8E3.toInt()
+        } else {
+            top = mix(0xFF2A2F42.toInt(), stats?.color ?: 0xFF3A4260.toInt(), 0.22f)
+            bottom = 0xFF11131B.toInt()
+        }
+
+        val rect = RectF(0f, 0f, w.toFloat(), h.toFloat())
         val r = h * CORNER_RATIO
-        Canvas(out).drawRoundRect(RectF(0f, 0f, w.toFloat(), h.toFloat()), r, r, paint)
-        src.recycle()
-        return out
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.shader = LinearGradient(0f, 0f, 0f, h.toFloat(), top, bottom, Shader.TileMode.CLAMP)
+        if (rounded) canvas.drawRoundRect(rect, r, r, paint) else canvas.drawRect(rect, paint)
+
+        // Borde de luz fino, horneado.
+        paint.shader = null
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = maxOf(1f, h * 0.012f)
+        paint.color = if (light) 0x33000000 else 0x33FFFFFF
+        val inset = paint.strokeWidth / 2f
+        canvas.drawRoundRect(RectF(inset, inset, w - inset, h - inset), r, r, paint)
+
+        if (glyph != null) {
+            canvas.drawBitmap(
+                glyph,
+                (w - glyph.width) / 2f,
+                (h - glyph.height) / 2f,
+                Paint(Paint.FILTER_BITMAP_FLAG)
+            )
+            glyph.recycle()
+        }
+        return bmp
+    }
+
+    /** Dibuja el icono dentro de un cuadrado de lado [box] conservando su proporcion. */
+    private fun rasterize(d: Drawable, box: Int): Bitmap {
+        val iw = if (d.intrinsicWidth > 0) d.intrinsicWidth else box
+        val ih = if (d.intrinsicHeight > 0) d.intrinsicHeight else box
+        val scale = box / maxOf(iw, ih).toFloat()
+        val dw = maxOf(1, (iw * scale).toInt())
+        val dh = maxOf(1, (ih * scale).toInt())
+        val b = Bitmap.createBitmap(dw, dh, Bitmap.Config.ARGB_8888)
+        d.setBounds(0, 0, dw, dh)
+        d.draw(Canvas(b))
+        return b
+    }
+
+    private class Stats(val coverage: Float, val luminance: Float, val color: Int)
+
+    /** Cobertura opaca, luminancia y color medio del icono, sobre una miniatura de 32 px. */
+    private fun analyze(b: Bitmap): Stats {
+        val sw = minOf(b.width, 32)
+        val sh = minOf(b.height, 32)
+        val small = Bitmap.createScaledBitmap(b, sw, sh, true)
+        val px = IntArray(sw * sh)
+        small.getPixels(px, 0, sw, 0, 0, sw, sh)
+        if (small !== b) small.recycle()
+
+        var n = 0
+        var sr = 0L
+        var sg = 0L
+        var sb = 0L
+        for (p in px) {
+            if (Color.alpha(p) > 40) {
+                n++
+                sr += Color.red(p)
+                sg += Color.green(p)
+                sb += Color.blue(p)
+            }
+        }
+        if (n == 0) return Stats(0f, 0.5f, 0xFF3A4260.toInt())
+        val ar = (sr / n).toInt()
+        val ag = (sg / n).toInt()
+        val ab = (sb / n).toInt()
+        val lum = (0.299f * ar + 0.587f * ag + 0.114f * ab) / 255f
+        return Stats(n / px.size.toFloat(), lum, Color.rgb(ar, ag, ab))
+    }
+
+    private fun mix(a: Int, b: Int, t: Float): Int {
+        fun ch(x: Int, y: Int) = (x + (y - x) * t).toInt().coerceIn(0, 255)
+        return Color.rgb(
+            ch(Color.red(a), Color.red(b)),
+            ch(Color.green(a), Color.green(b)),
+            ch(Color.blue(a), Color.blue(b))
+        )
     }
 
     companion object {
         /** Mismo radio relativo que usa el contorno de AppAdapter. */
         const val CORNER_RATIO = 0.14f
+        private const val ICON_RATIO = 0.56f
         private const val CACHE_KB = 10 * 1024
-        private const val CARD_COLOR = 0xFF1E2230.toInt()
     }
 }
