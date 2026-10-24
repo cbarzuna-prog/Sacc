@@ -43,9 +43,13 @@ class MainActivity : Activity() {
         val usable = resources.displayMetrics.widthPixels - 2 * dp(SIDE_PADDING_DP)
         span = (usable / (cardW + 2 * margin)).coerceIn(3, 8)
 
-        iconLoader = IconLoader(packageManager, cardW, cardH)
+        // Variables de medicion: `am start -S -n app.tvhome.launcher/.MainActivity --ez shadow false --ez clip false`
+        val shadow = intent.getBooleanExtra(EXTRA_SHADOW, true)
+        val clip = intent.getBooleanExtra(EXTRA_CLIP, true)
+
+        iconLoader = IconLoader(packageManager, cardW, cardH, !clip)
         adapter = AppAdapter(
-            iconLoader, cardW, cardH, margin,
+            iconLoader, cardW, cardH, margin, shadow, clip,
             { app -> launchApp(app) },
             { position -> startMove(position) }
         )
@@ -234,6 +238,9 @@ class MainActivity : Activity() {
         private const val ITEM_MARGIN_DP = 12
         private const val SIDE_PADDING_DP = 48
         private const val MOVE_GUARD_MS = 600L
+
+        private const val EXTRA_SHADOW = "shadow"
+        private const val EXTRA_CLIP = "clip"
 
         private const val ORIGINAL_PKG = "com.google.android.tvlauncher"
         private const val ORIGINAL_ACTIVITY = "com.google.android.tvlauncher.MainActivity"

@@ -14,6 +14,10 @@ class AppAdapter(
     private val cardW: Int,
     private val cardH: Int,
     private val margin: Int,
+    /** Sombra por elevacion en el foco (variable de medicion). */
+    private val shadow: Boolean,
+    /** Recorte de esquinas por contorno; si es false, los bitmaps ya vienen redondeados. */
+    private val clip: Boolean,
     private val onLaunch: (AppInfo) -> Unit,
     private val onLongPress: (Int) -> Unit
 ) : RecyclerView.Adapter<AppAdapter.VH>() {
@@ -52,14 +56,19 @@ class AppAdapter(
         card.layoutParams.height = cardH
         v.findViewById<TextView>(R.id.card_label).layoutParams.width = cardW
         (v.layoutParams as ViewGroup.MarginLayoutParams).setMargins(margin, margin, margin, margin)
-        // Esquinas redondeadas por recorte de contorno: no consume memoria de bitmap extra.
-        card.outlineProvider = object : ViewOutlineProvider() {
-            override fun getOutline(view: View, outline: Outline) {
-                outline.setRoundRect(0, 0, view.width, view.height, view.height * 0.14f)
+        if (shadow || clip) {
+            card.outlineProvider = object : ViewOutlineProvider() {
+                override fun getOutline(view: View, outline: Outline) {
+                    outline.setRoundRect(
+                        0, 0, view.width, view.height, view.height * IconLoader.CORNER_RATIO
+                    )
+                }
             }
+            card.clipToOutline = clip
         }
-        card.clipToOutline = true
-        card.elevation = cardH * 0.06f
+        card.elevation = if (shadow) cardH * 0.06f else 0f
+        // Con bitmaps ya redondeados, el fondo rectangular asomaria por las esquinas.
+        if (!clip) card.background = null
         return VH(v)
     }
 
@@ -98,7 +107,7 @@ class AppAdapter(
             val pkg = items.getOrNull(bindingAdapterPosition)?.pkg
             val moving = movingPkg != null && pkg == movingPkg
             val scale = if (moving) 1.2f else if (focused) 1.12f else 1f
-            val lift = if (focused || moving) cardH * 0.3f else 0f
+            val lift = if (shadow && (focused || moving)) cardH * 0.3f else 0f
             val labelAlpha = if (focused || moving) 1f else 0f
             if (animate) {
                 v.animate().scaleX(scale).scaleY(scale).translationZ(lift).setDuration(120).start()

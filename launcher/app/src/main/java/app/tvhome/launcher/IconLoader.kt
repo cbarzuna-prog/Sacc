@@ -2,7 +2,11 @@ package app.tvhome.launcher
 
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapShader
 import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.RectF
+import android.graphics.Shader
 import android.os.Handler
 import android.os.Looper
 import android.util.LruCache
@@ -18,7 +22,9 @@ import java.util.concurrent.TimeUnit
 class IconLoader(
     private val pm: PackageManager,
     private val w: Int,
-    private val h: Int
+    private val h: Int,
+    /** Si es true, las esquinas redondeadas se hornean en el bitmap (sin recorte por contorno). */
+    private val rounded: Boolean
 ) {
     private val cache = object : LruCache<String, Bitmap>(CACHE_KB) {
         override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount / 1024
@@ -78,10 +84,22 @@ class IconLoader(
             icon.setBounds(left, top, left + s, top + s)
             icon.draw(canvas)
         }
-        return bmp
+        return if (rounded) round(bmp) else bmp
+    }
+
+    private fun round(src: Bitmap): Bitmap {
+        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.shader = BitmapShader(src, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
+        val r = h * CORNER_RATIO
+        Canvas(out).drawRoundRect(RectF(0f, 0f, w.toFloat(), h.toFloat()), r, r, paint)
+        src.recycle()
+        return out
     }
 
     companion object {
+        /** Mismo radio relativo que usa el contorno de AppAdapter. */
+        const val CORNER_RATIO = 0.14f
         private const val CACHE_KB = 8 * 1024
         private const val CARD_COLOR = 0xFF1E2230.toInt()
     }

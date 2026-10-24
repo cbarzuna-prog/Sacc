@@ -2,7 +2,7 @@
 
 Launcher nativo en Kotlin para Android TV 11 (API 30), pensado para una TV con ~1,7 GB de RAM y ARMv7 de 32 bits.
 
-**Estado: v0.1.0, esqueleto funcional. No esta medido en la TV real todavia. No se afirma ningun resultado de rendimiento.**
+**Estado: v0.2.0. Medido en la TV: usa menos memoria que el launcher de Google pero la navegacion es menos fluida (ver `docs/MEDICION.md`). En optimizacion.**
 
 ## Que hace la v0.1
 

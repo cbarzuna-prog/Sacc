@@ -27,12 +27,39 @@ Todas las mediciones se hacen en la TV real, con la TV en reposo en la pantalla 
 ./adb shell ps -A -o PID,RSS,NAME | grep -i tvhome
 ```
 
-## Comparativa a rellenar
+## Prueba de fluidez reproducible (teclas por ADB)
 
-| Medida | Google TV launcher | Projectivy | Inicio TV |
+Mismo patron en todos los launchers: 30 pulsaciones (derecha x4, abajo, izquierda x4, arriba, tres veces), 0,4 s entre teclas.
+
+```bash
+./adb shell dumpsys gfxinfo <paquete> reset >/dev/null
+for r in 1 2 3; do for k in 22 22 22 22 20 21 21 21 21 19; do ./adb shell input keyevent $k; sleep 0.4; done; done
+./adb shell dumpsys gfxinfo <paquete> | grep -E "Total frames|Janky|percentile|Number"
+```
+
+Una muestra con pocos frames (menos de ~100) no es valida. Los percentiles de GPU de 4950 ms son un artefacto del driver de esta TV y se ignoran.
+
+## Variantes de Inicio TV (desde v0.2)
+
+La app lee parametros solo al arrancar; `-S` reinicia el proceso:
+
+```bash
+./adb shell am start -S -n app.tvhome.launcher/.MainActivity --ez shadow <true|false> --ez clip <true|false>
+```
+
+- `shadow`: sombra por elevacion al enfocar.
+- `clip`: recorte de esquinas por contorno. Con `false`, las esquinas redondeadas se hornean en el bitmap.
+
+## Resultados (TV real, Xiaomi MiTV-MOOQ2)
+
+| Medida | Google TV launcher | Projectivy (mejor caso) | Inicio TV v0.1 |
 |---|---|---|---|
-| PSS en reposo | 98,9 MB | 136-250 MB segun configuracion (174 MB con fondo liso) | por medir |
-| Gráficos | 18 MB | 37-112 MB | por medir |
+| PSS en reposo | 98,9 MB | 136 MB (174-250 MB con otras opciones) | 76,9 MB |
+| Servicios activos | n/a | 0 | 0 |
+| Frames medidos | 130 | por medir | 222 |
+| Janky | 2,3 % | por medir | 21,6 % |
+| p50 / p90 / p99 | 5 / 6 / 19 ms | por medir | 14 / 17 / 30 ms |
+| Dibujo lento | 1 | por medir | 20 |
 | Arranque en caliente | 321 ms (1 muestra valida) | por medir | por medir |
-| Frames janky (navegacion controlada) | por medir (26 % acumulado, no controlado) | por medir | por medir |
-| Servicios activos | n/a | 0 | por medir |
+
+La v0.1 usa menos memoria pero es menos fluida que el launcher de Google. La v0.2 permite aislar la causa con las variantes de arriba.
