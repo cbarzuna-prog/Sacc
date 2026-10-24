@@ -19,7 +19,7 @@ Inspirada en los principios de tvOS (foco claro, profundidad, calma visual). No 
 | Resto de apps | Cuadricula de 5 por fila con tarjetas pequenas |
 | Tarjeta | Tratamiento uniforme: tarjeta oscura con degradado vertical, ligero tinte del color medio del logo, borde de luz fino y el logo centrado (56 % del alto). Si el logo es oscuro y transparente se usa una placa clara para que no desaparezca; los iconos cuadrados a sangre se redondean. Las tarjetas grandes llevan ademas el nombre de la app horneado debajo del logo. Todo horneado en un bitmap |
 | Foco | La tarjeta enfocada escala 1,10 y se ve a pleno brillo; las demas se oscurecen con un filtro negro al 30 % (siguen opacas, no dejan ver el fondo). Solo escala y filtro, sin sombras ni desenfoque en tiempo real |
-| Reordenar | Pulsacion larga en OK o Menu, flechas, OK para terminar |
+| Gestionar apps | Pulsacion larga en OK (o Menu) abre un menu Mover / Ocultar. Mover: flechas y OK para terminar. Las apps ocultas se ven y se recuperan con el boton "Ocultas (n)" de la cabecera (aparece solo si hay ocultas) |
 | Botones | "Ajustes" y "Launcher original" en la cabecera, junto al reloj (liberan altura para tres filas) |
 
 ## Medidas y color
@@ -30,7 +30,7 @@ Inspirada en los principios de tvOS (foco claro, profundidad, calma visual). No 
 
 ## Mando
 
-- Flechas: mover el foco. OK: abrir. Pulsacion larga en OK o Menu: reordenar. Atras: volver al inicio de la cuadricula (nunca cierra el launcher). Home: vuelve al inicio.
+- Flechas: mover el foco. OK: abrir. Pulsacion larga en OK o Menu: menu Mover / Ocultar. Atras: volver al inicio de la cuadricula (nunca cierra el launcher). Home: vuelve al inicio.
 
 ## Fuera de alcance (a proposito)
 

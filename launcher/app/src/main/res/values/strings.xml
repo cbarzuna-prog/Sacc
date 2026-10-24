@@ -5,8 +5,16 @@
     <string name="hero_sub_default">Tus apps</string>
     <string name="hero_sub_fav">Favoritas</string>
     <string name="hero_sub_all">Todas las apps</string>
+    <string name="hero_hidden">Apps ocultas</string>
+    <string name="hero_sub_hidden">Pulsación larga para mostrar en inicio</string>
     <string name="btn_settings">Ajustes</string>
     <string name="btn_original_launcher">Launcher original</string>
+    <string name="btn_hidden">Ocultas (%d)</string>
+    <string name="btn_back">Volver</string>
+    <string name="menu_move">Mover</string>
+    <string name="menu_hide">Ocultar</string>
+    <string name="menu_show">Mostrar en inicio</string>
+    <string name="menu_cancel">Cancelar</string>
     <string name="move_hint">Modo mover: usa las flechas · OK para terminar</string>
     <string name="err_launch">No se pudo abrir la app</string>
     <string name="err_original_launcher">No se encontró el launcher original</string>

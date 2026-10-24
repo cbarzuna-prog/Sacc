@@ -1,6 +1,7 @@
 package app.tvhome.launcher
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.ComponentName
 import android.content.Intent
 import android.content.SharedPreferences
@@ -25,6 +26,7 @@ class MainActivity : Activity() {
     private lateinit var moveHint: TextView
     private lateinit var heroTitle: TextView
     private lateinit var heroSub: TextView
+    private lateinit var btnHidden: TextView
 
     private val worker = Executors.newSingleThreadExecutor()
 
@@ -32,6 +34,12 @@ class MainActivity : Activity() {
     private var movingPos = -1
     private var moveStartedAt = 0L
     private var firstLoad = true
+
+    /** true = se listan solo las apps ocultas (para mostrarlas de nuevo). */
+    private var hiddenView = false
+
+    /** Posicion donde devolver el foco cuando termine la proxima lectura de apps (-1 = ninguna). */
+    private var focusAfterRefresh = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,7 +68,7 @@ class MainActivity : Activity() {
         adapter = AppAdapter(
             iconLoader, LARGE_PER_ROW, largeW, largeH, smallW, smallH, margin, shadow, clip,
             { app -> launchApp(app) },
-            { position -> startMove(position) },
+            { position -> showItemMenu(position) },
             { position -> showHero(position) }
         )
 
@@ -78,8 +86,10 @@ class MainActivity : Activity() {
         grid.setHasFixedSize(true)
 
         moveHint = findViewById(R.id.move_hint)
+        btnHidden = findViewById(R.id.btn_hidden)
         findViewById<View>(R.id.btn_settings).setOnClickListener { openSettings() }
         findViewById<View>(R.id.btn_original).setOnClickListener { openOriginalLauncher() }
+        btnHidden.setOnClickListener { toggleHiddenView() }
     }
 
     override fun onStart() {
@@ -91,6 +101,11 @@ class MainActivity : Activity() {
         super.onNewIntent(intent)
         // HOME pulsado con el launcher ya abierto: volver al inicio de la cuadricula.
         if (moveMode) endMove()
+        if (hiddenView) {
+            hiddenView = false
+            resetHero()
+            refreshApps()
+        }
         grid.scrollToPosition(0)
         focusPosition(0)
     }
@@ -106,6 +121,8 @@ class MainActivity : Activity() {
         // Un launcher no debe cerrarse con Atras.
         if (moveMode) {
             endMove()
+        } else if (hiddenView) {
+            toggleHiddenView()
         } else {
             grid.scrollToPosition(0)
             focusPosition(0)
@@ -143,7 +160,7 @@ class MainActivity : Activity() {
                 val f = currentFocus
                 if (f != null && f.parent === grid) {
                     val p = grid.getChildAdapterPosition(f)
-                    if (p != RecyclerView.NO_POSITION) startMove(p)
+                    if (p != RecyclerView.NO_POSITION) showItemMenu(p)
                 }
                 return true
             }
@@ -153,17 +170,56 @@ class MainActivity : Activity() {
 
     /** Lee las apps en un hilo aparte y solo redibuja si la lista cambio. */
     private fun refreshApps() {
+        val hiddenOnly = hiddenView
         worker.execute {
-            val list = AppRepository.load(this, prefs)
+            val result = AppRepository.load(this, prefs, hiddenOnly)
             runOnUiThread {
-                if (isDestroyed) return@runOnUiThread
-                if (!moveMode) adapter.submit(list)
-                if (firstLoad && adapter.itemCount > 0) {
+                if (isDestroyed || hiddenOnly != hiddenView) return@runOnUiThread
+                if (hiddenOnly && result.apps.isEmpty()) {
+                    // Ya no queda nada oculto: volver a la vista normal.
+                    hiddenView = false
+                    resetHero()
+                    refreshApps()
+                    return@runOnUiThread
+                }
+                if (!moveMode) adapter.submit(result.apps)
+                updateHiddenButton(result.hiddenCount)
+
+                val target = focusAfterRefresh
+                focusAfterRefresh = -1
+                if (target >= 0 && adapter.itemCount > 0) {
+                    focusPosition(minOf(target, adapter.itemCount - 1))
+                } else if (firstLoad && adapter.itemCount > 0) {
                     firstLoad = false
                     focusPosition(0)
                 }
             }
         }
+    }
+
+    private fun updateHiddenButton(hiddenCount: Int) {
+        btnHidden.visibility = if (hiddenView || hiddenCount > 0) View.VISIBLE else View.GONE
+        btnHidden.text =
+            if (hiddenView) getString(R.string.btn_back) else getString(R.string.btn_hidden, hiddenCount)
+    }
+
+    private fun toggleHiddenView() {
+        if (moveMode) endMove()
+        hiddenView = !hiddenView
+        if (hiddenView) {
+            heroTitle.setText(R.string.hero_hidden)
+            heroSub.setText(R.string.hero_sub_hidden)
+        } else {
+            resetHero()
+        }
+        focusAfterRefresh = 0
+        grid.scrollToPosition(0)
+        refreshApps()
+    }
+
+    private fun resetHero() {
+        heroTitle.setText(R.string.hero_default)
+        heroSub.setText(R.string.hero_sub_default)
     }
 
     private fun focusPosition(position: Int, attempt: Int = 0) {
@@ -179,7 +235,13 @@ class MainActivity : Activity() {
     private fun showHero(position: Int) {
         val label = adapter.labelAt(position) ?: return
         if (heroTitle.text.toString() != label) heroTitle.text = label
-        heroSub.setText(if (position < LARGE_PER_ROW) R.string.hero_sub_fav else R.string.hero_sub_all)
+        heroSub.setText(
+            when {
+                hiddenView -> R.string.hero_sub_hidden
+                position < LARGE_PER_ROW -> R.string.hero_sub_fav
+                else -> R.string.hero_sub_all
+            }
+        )
     }
 
     private fun launchApp(app: AppInfo) {
@@ -213,6 +275,40 @@ class MainActivity : Activity() {
         } catch (e: Exception) {
             Toast.makeText(this, R.string.err_original_launcher, Toast.LENGTH_SHORT).show()
         }
+    }
+
+    /** Menu de la pulsacion larga: Mover / Ocultar (o Mostrar en inicio en la vista de ocultas). */
+    @Suppress("DEPRECATION")
+    private fun showItemMenu(position: Int) {
+        if (moveMode) return
+        val pkg = adapter.pkgAt(position) ?: return
+        val title = adapter.labelAt(position) ?: pkg
+        val options: Array<String> = if (hiddenView) {
+            arrayOf(getString(R.string.menu_show), getString(R.string.menu_cancel))
+        } else {
+            arrayOf(
+                getString(R.string.menu_move),
+                getString(R.string.menu_hide),
+                getString(R.string.menu_cancel)
+            )
+        }
+        AlertDialog.Builder(this, AlertDialog.THEME_DEVICE_DEFAULT_DARK)
+            .setTitle(title)
+            .setItems(options) { _, which ->
+                if (hiddenView) {
+                    if (which == 0) setHidden(pkg, false, position)
+                } else {
+                    if (which == 0) startMove(position)
+                    if (which == 1) setHidden(pkg, true, position)
+                }
+            }
+            .show()
+    }
+
+    private fun setHidden(pkg: String, hide: Boolean, position: Int) {
+        AppRepository.setHidden(prefs, pkg, hide)
+        focusAfterRefresh = position
+        refreshApps()
     }
 
     private fun startMove(position: Int) {
@@ -257,9 +353,7 @@ class MainActivity : Activity() {
     private fun endMove() {
         moveMode = false
         moveHint.visibility = View.GONE
-        prefs.edit()
-            .putString(AppRepository.KEY_ORDER, adapter.packages().joinToString(","))
-            .apply()
+        AppRepository.saveOrder(prefs, adapter.packages())
         val pos = movingPos
         movingPos = -1
         adapter.movingPkg = null
