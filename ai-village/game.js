@@ -409,41 +409,53 @@
     }
   }
 
-  // ---------- los 10 agentes: viven en su casa, salen a pasear y vuelven ----------
+  // ---------- los directores: viven en su casa, mayormente en su escritorio y su jardín ----------
   // Cada hoja es de 3 columnas (pie izquierdo, de pie, pie derecho) x 4 filas (frente, derecha, izquierda, espaldas), celdas de 240x340 px.
   const AG_CW = 240, AG_CH = 340, AG_BASE = 334, AG_UPP = 0.0765; // 316 px de alto de pie x 0.0765 = ~24 unidades, igual que tú
   const AG_ROW = { down: 0, right: 1, left: 2, up: 3 };
   const AG_FRAMES = [0, 1, 2, 1];
   const AG_SPEED = 36;
-  // room = dónde se queda parado dentro de su habitación (píxeles de la imagen de 1680x944, los pies) y hacia dónde mira
-  const AGENT_DEFS = [
-    { id: 'banker', house: 1, room: { x: 470, y: 440, face: 'left' } },
-    { id: 'trader', house: 2, room: { x: 1310, y: 570, face: 'up' } },
-    { id: 'scholar', house: 3, room: { x: 590, y: 540, face: 'left' } },
-    { id: 'postman', house: 4, room: { x: 1300, y: 510, face: 'up' } },
-    { id: 'reporter', house: 5, room: { x: 510, y: 570, face: 'left' } },
-    { id: 'adman', house: 6, room: { x: 1300, y: 670, face: 'up' } },
-    { id: 'promoter', house: 7, room: { x: 570, y: 510, face: 'left' } },
-    { id: 'broker', house: 8, room: { x: 1210, y: 700, face: 'up' } },
-    { id: 'driver', house: 9, room: { x: 545, y: 430, face: 'left' } },
-    { id: 'mayor', house: 'hall', room: { x: 590, y: 580, face: 'right' } },
+  const ROOMK = 512 / 1680; // de píxeles de la imagen de la habitación a unidades del juego
+  // Silla de cada escritorio, en píxeles de la imagen de 1680x944: x = centro de la silla, clip = borde de arriba del escritorio.
+  // Sentado, se dibuja solo lo que queda por encima de ese borde, así las piernas quedan tapadas por el mueble.
+  const SEATS = {
+    1: { x: 300, clip: 368 }, 2: { x: 1301, clip: 336 }, 3: { x: 403, clip: 453 }, 4: { x: 1300, clip: 252 },
+    5: { x: 306, clip: 497 }, 6: { x: 1311, clip: 374 }, 7: { x: 359, clip: 376 }, 8: { x: 1216, clip: 432 },
+    9: { x: 308, clip: 333 }, hall: { x: 700, clip: 372, face: 'right' },
+  };
+  const DIR_DATA = (window.DIRECTORS && window.DIRECTORS.length) ? window.DIRECTORS : [
+    { id: 'banker', house: 1 }, { id: 'trader', house: 2 }, { id: 'scholar', house: 3 }, { id: 'postman', house: 4 }, { id: 'reporter', house: 5 },
+    { id: 'adman', house: 6 }, { id: 'promoter', house: 7 }, { id: 'broker', house: 8 }, { id: 'driver', house: 9 }, { id: 'mayor', house: 'hall' },
   ];
   const agRng = rng(20241103);
   const agRand = (a, b) => a + agRng() * (b - a);
-  const AGENTS = AGENT_DEFS.map((d, i) => {
+  const agSeat = a => SEATS[String(a.def.house)];
+  const agSeatPos = a => { const s = agSeat(a); return [s.x * ROOMK, s.clip * ROOMK + 9]; };
+  const agDoor = a => (a.def.house === 'hall' ? HALL.doors[0] : HOUSES[a.def.house - 1].door);
+  function agYard(a) { // el jardín propio: la franja de terreno delante de su casa
+    if (a.def.house === 'hall') return { x0: 14, x1: 25, y0: 7, y1: 9 };
+    const h = HOUSES[a.def.house - 1];
+    return { x0: h.x - 1, x1: h.x + h.w, y0: h.y + h.h, y1: h.y + h.h + 3 };
+  }
+  const agInYard = (a, tx, ty) => { const y = agYard(a); return tx >= y.x0 && tx <= y.x1 && ty >= y.y0 && ty <= y.y1; };
+  // Por dónde puede caminar: solo caminos y plaza, más su propio jardín. Nunca sobre algo sólido (casas, muebles, cercas...).
+  const agOk = (a, tx, ty, avoid) => tx >= 0 && ty >= 0 && tx < MW && ty < MH && !solid[ty][tx] &&
+    (kind[ty][tx] > 0 || agInYard(a, tx, ty)) && !(avoid && avoid.has(ty * MW + tx));
+  const agTile = a => [Math.floor(a.x / T), Math.floor((a.y - 3) / T)];
+  const AG_TARGETS = []; // sitios del pueblo donde pueden detenerse en un paseo: caminos y plaza, fuera de los jardines de las casas
+  for (let ty = 0; ty < MH; ty++) for (let tx = 0; tx < MW; tx++) if (kind[ty][tx] > 0 && !solid[ty][tx] && !inYard(tx, ty)) AG_TARGETS.push([tx, ty]);
+
+  const AGENTS = DIR_DATA.map((d, i) => {
     const sp = { file: `agents/${d.id}.png` };
     loadSpriteFile(sp, 1e9);
-    return { def: d, sp, state: 'inside', timer: agRand(0.8 + i * 0.6, 4 + i * 1.1), x: 0, y: 0, face: 'down', path: [], walkT: agRand(0, 4), moving: false };
+    return { def: d, sp, mode: 'room', st: 'seated', timer: agRand(2 + i * 1.5, 14 + i * 3), x: 0, y: 0, rx: 0, ry: 0, face: 'down',
+      path: [], rpath: [], walkT: agRand(0, 4), moving: false, blockT: 0, near: false, onArrive: null, onWait: null, goal: null, tail: [], yardUntil: 0, plan: null };
   });
   const AGENT_BY_HOUSE = {};
   AGENTS.forEach(a => { AGENT_BY_HOUSE[String(a.def.house)] = a; });
-  const agDoor = a => (a.def.house === 'hall' ? HALL.doors[0] : HOUSES[a.def.house - 1].door);
 
-  const agWalkable = (tx, ty) => tx >= 0 && ty >= 0 && tx < MW && ty < MH && kind[ty][tx] > 0 && !solid[ty][tx];
-  const AG_TARGETS = []; // sitios donde pueden detenerse: caminos y plaza, nunca frente a una puerta
-  for (let ty = 0; ty < MH; ty++) for (let tx = 0; tx < MW; tx++) if (agWalkable(tx, ty) && !inYard(tx, ty)) AG_TARGETS.push([tx, ty]);
-  function agPath(sx, sy, gx, gy) { // búsqueda de camino por casillas (solo caminos y plaza)
-    if (!agWalkable(sx, sy) || !agWalkable(gx, gy)) return null;
+  function agPath(a, sx, sy, gx, gy, avoid) { // camino por casillas
+    if (!agOk(a, sx, sy) || !agOk(a, gx, gy, avoid)) return null;
     const prev = new Map(), key = (x, y) => y * MW + x;
     const q = [[sx, sy]]; prev.set(key(sx, sy), null);
     for (let i = 0; i < q.length; i++) {
@@ -455,70 +467,185 @@
       }
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const nx = x + dx, ny = y + dy;
-        if (!agWalkable(nx, ny) || prev.has(key(nx, ny))) continue;
+        if (!agOk(a, nx, ny, avoid) || prev.has(key(nx, ny))) continue;
         prev.set(key(nx, ny), [x, y]); q.push([nx, ny]);
       }
     }
     return null;
   }
-  const agTile = a => [Math.floor(a.x / T), Math.floor((a.y - 3) / T)];
-  function agPickTarget(a) {
+
+  // ---- la habitación por dentro: camina de la puerta al escritorio por el suelo libre ----
+  function agRoomPlan(a) {
+    if (a.plan) return a.plan;
+    const d = ROOM_DEFS[String(a.def.house)], C = 4, gw = Math.ceil(ROOM_W / C), gh = Math.ceil(ROOM_H / C);
+    const cx2 = c => c * C + C / 2;
+    const ok = (cx, cy) => cx >= 0 && cy >= 0 && cx < gw && cy < gh && canStandRoom(cx2(cx), cx2(cy), d);
+    const doorX = (d.door[0] + d.door[1]) / 2, sx = Math.floor(doorX / C), sy = Math.floor((d.floor[3] - 3) / C);
+    const [seatX, seatY] = agSeatPos(a);
+    const prev = new Map(), key = (x, y) => y * gw + x, q = [[sx, sy]]; prev.set(key(sx, sy), null);
+    let best = [sx, sy], bestD = Infinity;
+    for (let i = 0; i < q.length; i++) {
+      const [x, y] = q[i], dd = Math.hypot(cx2(x) - seatX, cx2(y) - seatY);
+      if (dd < bestD) { bestD = dd; best = [x, y]; }
+      for (let ox = -1; ox <= 1; ox++) for (let oy = -1; oy <= 1; oy++) {
+        if (!ox && !oy) continue;
+        const nx = x + ox, ny = y + oy;
+        if (!ok(nx, ny) || prev.has(key(nx, ny))) continue;
+        if (ox && oy && (!ok(x + ox, y) || !ok(x, y + oy))) continue; // no cortar esquinas de muebles
+        prev.set(key(nx, ny), [x, y]); q.push([nx, ny]);
+      }
+    }
+    const cells = []; let k = key(best[0], best[1]);
+    while (k !== undefined && k !== null) { cells.push([k % gw, Math.floor(k / gw)]); const p = prev.get(k); k = p ? key(p[0], p[1]) : null; }
+    cells.reverse();
+    let pts = [[doorX, d.floor[3] + 3]].concat(cells.map(c => [cx2(c[0]), cx2(c[1])])).concat([[seatX, seatY]]);
+    const out = [pts[0]]; // quitar puntos que están en línea recta
+    for (let i = 1; i < pts.length - 1; i++) {
+      const p0 = out[out.length - 1], p1 = pts[i], p2 = pts[i + 1];
+      if (Math.abs((p1[0] - p0[0]) * (p2[1] - p1[1]) - (p1[1] - p0[1]) * (p2[0] - p1[0])) > 1e-6) out.push(p1);
+    }
+    out.push(pts[pts.length - 1]);
+    a.plan = { pts: out };
+    return a.plan;
+  }
+  function agEnterRoom(a) { // llegó caminando a la puerta: pasa a la habitación y camina al escritorio
+    const plan = agRoomPlan(a), p0 = plan.pts[0];
+    a.mode = 'room'; a.st = 'toDesk'; a.rx = p0[0]; a.ry = p0[1]; a.face = 'up'; a.moving = true; a.blockT = 0;
+    a.rpath = plan.pts.slice(1).map(p => p.slice());
+  }
+  function agLeaveSeat(a) {
+    const plan = agRoomPlan(a);
+    a.st = 'toDoor'; a.rpath = plan.pts.slice(0, -1).reverse().map(p => p.slice());
+  }
+  function agLeaveRoom(a) { // llegó caminando a la puerta de la habitación: sale al pueblo, justo en la puerta
+    const door = agDoor(a);
+    a.mode = 'world'; a.x = door[0] * T + 8; a.y = door[1] * T + 10; a.face = 'down'; a.blockT = 0; a.moving = true;
+    agWalkTo(a, [[door[0], door[1] + 1]], () => agYardLoop(a));
+  }
+
+  // ---- el pueblo ----
+  function agWalkTo(a, path, fn, tail) {
+    a.path = path; a.onArrive = fn; a.st = 'walk'; a.tail = tail || [];
+    a.goal = path.length ? path[path.length - 1] : null; a.blockT = 0;
+  }
+  function agWait(a, secs, fn) { a.st = 'wait'; a.timer = secs; a.onWait = fn; a.moving = false; }
+  function agYardPoint(a) { // sitio del jardín donde puede detenerse: nunca en el pasillo de 3 casillas delante de la puerta
+    const y = agYard(a), door = agDoor(a), [cx, cy] = agTile(a), c = [];
+    for (let ty = y.y0; ty <= y.y1; ty++) for (let tx = y.x0; tx <= y.x1; tx++) {
+      if (!agOk(a, tx, ty)) continue;
+      if (Math.abs(tx - door[0]) <= 1 && ty <= door[1] + 3) continue;
+      if (Math.abs(tx - cx) + Math.abs(ty - cy) < 2) continue;
+      c.push([tx, ty]);
+    }
+    return c.length ? c[Math.floor(agRng() * c.length)] : null;
+  }
+  function agYardLoop(a) { a.yardUntil = time + agRand(16, 40); agYardNext(a); }
+  function agYardNext(a) {
+    if (time >= a.yardUntil) { if (agRng() < 0.15) agVisit(a); else agGoHome(a); return; }
+    const t = agYardPoint(a), [sx, sy] = agTile(a);
+    const p = t && agPath(a, sx, sy, t[0], t[1]);
+    if (!p) { agWait(a, 2.5, () => agYardNext(a)); return; }
+    agWalkTo(a, p, () => { a.face = 'down'; agWait(a, agRand(1.5, 4.5), () => agYardNext(a)); });
+  }
+  function agVisit(a) { // salida corta por el pueblo y de vuelta a casa
     const [sx, sy] = agTile(a);
     for (let i = 0; i < 8; i++) {
       const t = AG_TARGETS[Math.floor(agRng() * AG_TARGETS.length)];
       if (Math.abs(t[0] - sx) + Math.abs(t[1] - sy) < 5) continue;
-      const p = agPath(sx, sy, t[0], t[1]);
-      if (p) return p;
+      const p = agPath(a, sx, sy, t[0], t[1]);
+      if (p) { agWalkTo(a, p, () => { a.face = 'down'; agWait(a, agRand(2, 5), () => agGoHome(a)); }); return; }
     }
-    return null;
-  }
-  function agSpawn(a) {
-    const door = agDoor(a);
-    a.x = door[0] * T + 8; a.y = door[1] * T + 10; a.face = 'down';
-    a.path = [[door[0], door[1] + 1]];
-    const p = agPickTarget({ x: door[0] * T + 8, y: (door[1] + 1) * T + 10 });
-    if (!p) return false;
-    a.path = a.path.concat(p); a.state = 'out'; a.moving = true;
-    return true;
-  }
-  function agGoHome(a) {
-    const door = agDoor(a), [sx, sy] = agTile(a);
-    const p = agPath(sx, sy, door[0], door[1] + 1);
-    if (!p) { a.state = 'inside'; a.timer = agRand(6, 14); return; }
-    a.path = p.concat([[door[0], door[1]]]); a.state = 'home';
-  }
-  function agNext(a) {
-    if (agRng() < 0.4) { const p = agPickTarget(a); if (p) { a.path = p; a.state = 'out'; return; } }
     agGoHome(a);
   }
-  function updateAgents(dt) {
-    for (const a of AGENTS) {
-      if (a.state === 'inside') {
-        a.moving = false;
-        if (scene === 'interior' && curInterior && String(curInterior.key) === String(a.def.house)) continue; // no sale mientras estás en su habitación
-        a.timer -= dt;
-        if (a.timer <= 0 && !agSpawn(a)) a.timer = 3;
-        continue;
-      }
-      if (scene === 'world' && Math.hypot(px - a.x, (py - a.y) * 1.3) < 30) { // se detiene y te mira
-        a.moving = false;
-        const ddx = px - a.x, ddy = py - a.y;
-        a.face = Math.abs(ddx) > Math.abs(ddy) ? (ddx > 0 ? 'right' : 'left') : (ddy > 0 ? 'down' : 'up');
-        continue;
-      }
-      if (a.state === 'idle') { a.moving = false; a.timer -= dt; if (a.timer <= 0) agNext(a); continue; }
-      const nt = a.path[0];
-      if (!nt) {
-        if (a.state === 'out') { a.state = 'idle'; a.timer = agRand(2, 5); a.moving = false; a.face = 'down'; }
-        else { a.state = 'inside'; a.timer = agRand(6, 16); a.moving = false; }
-        continue;
-      }
-      const gx = nt[0] * T + 8, gy = nt[1] * T + 10, ddx = gx - a.x, ddy = gy - a.y, dd = Math.hypot(ddx, ddy), step = AG_SPEED * dt;
-      if (dd <= step) { a.x = gx; a.y = gy; a.path.shift(); }
-      else { a.x += ddx / dd * step; a.y += ddy / dd * step; }
-      if (dd > 0.01) a.face = Math.abs(ddx) > Math.abs(ddy) ? (ddx > 0 ? 'right' : 'left') : (ddy > 0 ? 'down' : 'up');
-      a.moving = true; a.walkT += dt;
+  function agGoHome(a) { // camina hasta la puerta (nada de aparecer adentro de golpe)
+    const door = agDoor(a), [sx, sy] = agTile(a), p = agPath(a, sx, sy, door[0], door[1] + 1);
+    if (!p) { agWait(a, 2.5, () => agGoHome(a)); return; }
+    agWalkTo(a, p.concat([[door[0], door[1]]]), () => agEnterRoom(a), [[door[0], door[1]]]);
+  }
+
+  const agOverlap = (ax, ay, nx, ny) => Math.abs(nx - ax) < 9 && Math.abs(ny - ay) < 5;
+  function agFaceToward(a, ax, ay, tx, ty) {
+    const dx = tx - ax, dy = ty - ay;
+    a.face = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+  }
+  function updateRoomAgent(a, dt, playerHere) {
+    if (playerHere && Math.hypot(px - a.rx, (py - a.ry) * 1.3) < 34) a.near = true;
+    if (a.st === 'seated') {
+      a.moving = false; a.face = agSeat(a).face || 'down';
+      if (!a.near || true) a.timer -= dt;
+      if (a.timer <= 0) agLeaveSeat(a);
+      return;
     }
+    if (a.near) { a.moving = false; agFaceToward(a, a.rx, a.ry, px, py); return; } // se detiene y te mira
+    const nt = a.rpath[0];
+    if (!nt) {
+      if (a.st === 'toDesk') { const s = agSeatPos(a); a.rx = s[0]; a.ry = s[1]; a.st = 'seated'; a.timer = agRand(30, 75); a.moving = false; }
+      else agLeaveRoom(a);
+      return;
+    }
+    const ddx = nt[0] - a.rx, ddy = nt[1] - a.ry, dd = Math.hypot(ddx, ddy), step = AG_SPEED * dt;
+    const nx = dd <= step ? nt[0] : a.rx + ddx / dd * step, ny = dd <= step ? nt[1] : a.ry + ddy / dd * step;
+    if (playerHere && agOverlap(px, py, nx, ny) && !agOverlap(px, py, a.rx, a.ry)) { a.moving = false; return; } // espera si estás en el camino
+    if (dd > 0.01) agFaceToward(a, a.rx, a.ry, nt[0], nt[1]);
+    a.rx = nx; a.ry = ny; if (dd <= step) a.rpath.shift();
+    a.moving = true; a.walkT += dt;
+  }
+  function agBlockedBy(a, nx, ny) { // otro agente o tú, en el camino
+    for (const o of AGENTS) if (o !== a && o.mode === 'world' && agOverlap(o.x, o.y, nx, ny) && !agOverlap(o.x, o.y, a.x, a.y)) return o;
+    if (scene === 'world' && agOverlap(px, py, nx, ny) && !agOverlap(px, py, a.x, a.y)) return 'player';
+    return null;
+  }
+  function updateWorldAgent(a, dt) {
+    if (scene === 'world' && Math.hypot(px - a.x, (py - a.y) * 1.3) < 34) { // se detiene y te mira
+      a.near = true; a.moving = false; agFaceToward(a, a.x, a.y, px, py); return;
+    }
+    if (a.st === 'wait') { a.moving = false; a.timer -= dt; if (a.timer <= 0) { const f = a.onWait; a.onWait = null; if (f) f(); } return; }
+    const nt = a.path[0];
+    if (!nt) { a.moving = false; const f = a.onArrive; a.onArrive = null; if (f) f(); return; }
+    const gx = nt[0] * T + 8, gy = nt[1] * T + 10, ddx = gx - a.x, ddy = gy - a.y, dd = Math.hypot(ddx, ddy), step = AG_SPEED * dt;
+    const nx = dd <= step ? gx : a.x + ddx / dd * step, ny = dd <= step ? gy : a.y + ddy / dd * step;
+    const blocker = agBlockedBy(a, nx, ny);
+    if (blocker) { // se rodean: primero esperan, luego buscan otro camino que evite al otro
+      a.moving = false; a.blockT += dt;
+      if (a.blockT > 2 && a.goal) {
+        const avoid = new Set(); if (blocker !== 'player') avoid.add(Math.floor((blocker.y - 3) / T) * MW + Math.floor(blocker.x / T));
+        const [sx, sy] = agTile(a), p = agPath(a, sx, sy, a.goal[0], a.goal[1], avoid);
+        if (p && p.length) { a.path = p.concat(a.tail); a.blockT = 0; }
+      }
+      return;
+    }
+    a.blockT = 0;
+    if (dd > 0.01) agFaceToward(a, a.x, a.y, gx, gy);
+    a.x = nx; a.y = ny; if (dd <= step) a.path.shift();
+    a.moving = true; a.walkT += dt;
+  }
+  function updateAgents(dt) {
+    const key = scene === 'interior' && curInterior ? String(curInterior.key) : null;
+    for (const a of AGENTS) {
+      a.near = false;
+      if (a.mode === 'room') updateRoomAgent(a, dt, key === String(a.def.house));
+      else updateWorldAgent(a, dt);
+    }
+  }
+  // posición inicial: la mitad ya está sentada y la otra mitad en su jardín
+  AGENTS.forEach((a, i) => {
+    if (i % 2 === 0) { const s = agSeatPos(a); a.rx = s[0]; a.ry = s[1]; return; }
+    const door = agDoor(a); a.mode = 'world'; a.x = door[0] * T + 8; a.y = (door[1] + 1) * T + 10; a.face = 'down';
+    a.yardUntil = agRand(10, 30); a.st = 'wait'; a.timer = agRand(0.2, 2.5); a.onWait = () => agYardNext(a);
+  });
+
+  function drawAgentLabel(c, a, x, y) { // nombre y cargo sobre la cabeza cuando te acercas
+    const nm = a.def.name, role = a.def.role;
+    if (!nm) return;
+    const ny = y - AG_BASE * AG_UPP - 6;
+    c.font = 'bold 3.1px "Courier New", monospace'; const w1 = c.measureText(nm).width;
+    c.font = '2.3px "Courier New", monospace'; const w2 = role ? c.measureText(role).width : 0;
+    const w = Math.max(w1, w2) + 4, h = role ? 7.4 : 5;
+    c.fillStyle = 'rgba(20,10,2,.80)'; c.fillRect(x - w / 2, ny - h / 2, w, h);
+    c.strokeStyle = 'rgba(216,176,74,.85)'; c.lineWidth = 0.3; c.strokeRect(x - w / 2, ny - h / 2, w, h);
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = 'bold 3.1px "Courier New", monospace'; c.fillStyle = '#f6e3a4'; c.fillText(nm, x, ny - (role ? 1.4 : 0));
+    if (role) { c.font = '2.3px "Courier New", monospace'; c.fillStyle = '#cdb88e'; c.fillText(role, x, ny + 2); }
   }
   function drawAgentAt(c, a, x, y, face, moving) {
     const img = a.sp.levels && a.sp.levels[0];
@@ -528,16 +655,21 @@
     c.imageSmoothingEnabled = k * scaleOf() * dpr < 1; c.imageSmoothingQuality = 'high';
     c.drawImage(img, col * AG_CW, row * AG_CH, AG_CW, AG_CH, x - AG_CW / 2 * k, y - AG_BASE * k, AG_CW * k, AG_CH * k);
   }
-  const agOverlap = (ax, ay, nx, ny) => Math.abs(nx - ax) < 9 && Math.abs(ny - ay) < 5;
+  function drawAgentRoom(c, a) { // dentro de su habitación; sentado, las piernas quedan tapadas por el escritorio
+    const s = agSeat(a), clipY = s.clip * ROOMK, sx = s.x * ROOMK;
+    if (Math.abs(a.rx - sx) <= 16 && a.ry >= clipY - 40) {
+      c.save(); c.beginPath(); c.rect(0, 0, ROOM_W, clipY); c.clip();
+      drawAgentAt(c, a, a.rx, a.ry, a.face, a.moving);
+      c.restore();
+    } else drawAgentAt(c, a, a.rx, a.ry, a.face, a.moving);
+    if (a.near) drawAgentLabel(c, a, a.rx, Math.min(a.ry, clipY + 2));
+  }
   function agentBlocks(nx, ny) { // no puedes atravesar a un agente (salvo que ya estés encima de él)
     if (scene === 'world') {
-      for (const a of AGENTS) if (a.state !== 'inside' && agOverlap(a.x, a.y, nx, ny) && !agOverlap(a.x, a.y, px, py)) return true;
+      for (const a of AGENTS) if (a.mode === 'world' && agOverlap(a.x, a.y, nx, ny) && !agOverlap(a.x, a.y, px, py)) return true;
     } else {
       const a = curInterior && AGENT_BY_HOUSE[String(curInterior.key)];
-      if (a && a.state === 'inside' && curInterior.def) {
-        const k = ROOM_W / 1680, ax = a.def.room.x * k, ay = a.def.room.y * k;
-        if (agOverlap(ax, ay, nx, ny) && !agOverlap(ax, ay, px, py)) return true;
-      }
+      if (a && a.mode === 'room' && agOverlap(a.rx, a.ry, nx, ny) && !agOverlap(a.rx, a.ry, px, py)) return true;
     }
     return false;
   }
@@ -1292,9 +1424,8 @@
       c.drawImage(roomSurface(d), 0, 0, ROOM_W, ROOM_H);
     }
     const a = curInterior && AGENT_BY_HOUSE[String(curInterior.key)];
-    const k = ROOM_W / 1680;
     const list = [{ y: py, f: () => drawPlayer(c, px, py, t, moving, face) }];
-    if (a && a.state === 'inside') list.push({ y: a.def.room.y * k, f: () => drawAgentAt(c, a, a.def.room.x * k, a.def.room.y * k, a.def.room.face, false) });
+    if (a && a.mode === 'room') list.push({ y: a.ry, f: () => drawAgentRoom(c, a) });
     list.sort((p, q) => p.y - q.y).forEach(o => o.f());
   }
 
@@ -1630,7 +1761,7 @@
       },
     }));
     placedProps.forEach(p => objs.push({ y: p.base, f: () => drawPropAt(c, p, t) }));
-    AGENTS.forEach(a => { if (a.state !== 'inside') objs.push({ y: a.y, f: () => drawAgentAt(c, a, a.x, a.y, a.face, a.moving) }); });
+    AGENTS.forEach(a => { if (a.mode === 'world') objs.push({ y: a.y, f: () => { drawAgentAt(c, a, a.x, a.y, a.face, a.moving); if (a.near) drawAgentLabel(c, a, a.x, a.y); } }); });
     objs.push({ y: 15 * T, f: () => drawFountain(c, t) });
     objs.push({ y: py, f: () => drawPlayer(c, px, py, t, moving, face) });
     objs.sort((a, b) => a.y - b.y).forEach(o => { if (o.y > Tp - 6 && o.y < B + 40) o.f(); });
@@ -1731,8 +1862,10 @@
     setZoom: rel => { const v = curView(); v.rel = Math.max(minRel(), Math.min(MAXREL, rel)); clampCam(); },
     view: () => ({ ...curView(), scale: scaleOf(), dpr, cssW, cssH, minRel: minRel() }),
     frameMs: () => frameMs,
-    agents: () => AGENTS.map(a => ({ id: a.def.id, house: a.def.house, state: a.state, x: Math.round(a.x), y: Math.round(a.y), ready: a.sp.ready })),
-    roomAgentFree: () => AGENTS.map(a => { const d = ROOM_DEFS[String(a.def.house)], k = ROOM_W / 1680; return { id: a.def.id, free: canStandRoom(a.def.room.x * k, a.def.room.y * k, d) }; }),
-    forceAgentsOut: () => AGENTS.forEach(a => { if (a.state === 'inside') { a.timer = 0; } }),
+    agents: () => AGENTS.map(a => ({ id: a.def.id, house: a.def.house, mode: a.mode, st: a.st, x: Math.round(a.x * 10) / 10, y: Math.round(a.y * 10) / 10, rx: Math.round(a.rx * 10) / 10, ry: Math.round(a.ry * 10) / 10, ready: a.sp.ready, near: a.near })),
+    solidAt: (tx, ty) => solid[ty][tx],
+    agentOk: (id, tx, ty) => { const a = AGENTS.find(q => q.def.id === id); return agOk(a, tx, ty); },
+    seatsFree: () => AGENTS.map(a => { const d = ROOM_DEFS[String(a.def.house)], pl = agRoomPlan(a); return { id: a.def.id, points: pl.pts.length, last: pl.pts[pl.pts.length - 1].map(Math.round), pathFree: pl.pts.slice(0, -1).every(p => canStandRoom(p[0], p[1], d)) }; }),
+    forceLeaveSeats: () => AGENTS.forEach(a => { if (a.st === 'seated') a.timer = 0; }),
   };
 })();

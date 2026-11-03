@@ -17,6 +17,35 @@
 7. Estilo elegido: Lejano Oeste tipo Red Dead Redemption. 10 casas (3 a cada lado, 2 arriba, 2 abajo), ayuntamiento al norte, plaza central con bomba de agua. Todo dibujado con código (sin imágenes externas, sin API keys, sin nada que corra solo).
 6. Higgsfield: la conexión de Claude solo puede ver saldo, modelos y generaciones; no genera. Plan Starter.
 
+## Cómo funciona el equipo (lo dijo el usuario; guardado tal cual)
+Jerarquía, de arriba hacia abajo:
+1. **El usuario** (Chief Human Officer), arriba de todo.
+2. **El jefe de gabinete** (chief of staff), vive en el ayuntamiento.
+3. **Los directores.** Cada director es dueño de **un área de la vida del usuario y de una casa**. Solo los directores tienen casa propia.
+4. **Los trabajadores**, debajo de los directores. Son como pasantes: **su director revisa cada pieza de su trabajo antes de que quede completa**. Cada tarea de un trabajador viene de su director. No tienen casa.
+
+Modelos (nombres como los escribió el usuario):
+- **Directores:** Opus 5.5, con el **advisor activado**, para consultar a **Fable 5.1** cuando algo es difícil.
+- **Trabajadores:** Sonnet 5.5.
+
+Aplicación al pueblo hoy: los 9 agentes con casa (Dinero, Trading, Investigación, Bandeja y email, Noticias de IA, Meta Ads, Marketing inmobiliario, Inmobiliaria y Outreach) son directores; la Alcaldesa es el jefe de gabinete (ayuntamiento); todavía no hay trabajadores en el pueblo.
+
+Reglas de movimiento (pedidas por el usuario; pendientes de construir, faltan 3 decisiones: cómo saber quién trabaja, si se ensanchan los caminos de un carril y cómo se "anotan" las charlas):
+- Quien trabaja camina a su casa, entra, camina hasta su escritorio y se sienta.
+- Un director sin trabajo se queda en su propio jardín y puede caminar un poco.
+- Cuando el usuario camina cerca de alguien, esa persona se detiene y se voltea a verlo.
+- Los trabajadores recorren todo el pueblo. Si se topan con alguien con quien no hablaron ese día, se detienen, preguntan en qué trabaja y ambos toman notas; si ya hablaron hoy, siguen de largo.
+- Todos se quedan en los caminos, se rodean entre ellos y nunca atraviesan paredes.
+- Nadie se teletransporta: para entrar a una casa caminan hasta la puerta.
+- Nadie se para sobre muebles, cercas ni encima de otro.
+
+## Los directores (aprobados por el usuario, opción A: se reutilizaron las 9 hojas de caminata)
+Datos completos (nombre, cargo, personalidad, manía, look) en `ai-village/directors.js`: Augustus Whitcombe (Dinero, Banco), Philippa "Pip" Calloway (Trading, Bolsa), Profesora Ottoline Marsh (Investigación, Archivo), Cassius Adeyemi (Bandeja y email, Correo), Billie Fairweather (Noticias de IA, Gaceta), Salvador "Sal" Quintero (Meta Ads), Clementine Hartwell (Marketing inmobiliario, Promotora), Barnaby Crowe (Inmobiliaria, Tierras) y Everett Ridgeway (Outreach, Express). La jefa de gabinete (ayuntamiento) todavía no tiene nombre propio.
+
+Cómo se mueven los directores (construido): casi siempre sentados en su escritorio (caminan de la puerta al escritorio dentro de la habitación y se dibujan detrás del mueble) o en su propio jardín, donde caminan de lado a lado; de vez en cuando, una salida corta por el pueblo. Nadie aparece de golpe: para entrar o salir caminan hasta la puerta. Se detienen y te miran cuando te acercas (y se muestra su nombre y cargo). Se rodean entre ellos y se quedan en caminos, plaza y su propio jardín. Probado: 90 s con los 10 agentes, 0 saltos, 0 salidas del camino, distancia mínima entre agentes ~40 unidades. Pendiente para cuando haya trabajadores: charlas entre trabajadores con notas, y el panel o horario de "trabajando".
+
+Cada director es un agente real con su carpeta: `ai-village/team/<director>/CLAUDE.md` (quién es, su trabajo, a quién reporta y quién le reporta, su "superpoder" basado en métodos públicos de expertos reales, reglas duras) y `ai-village/team/<director>/notes.md` (su memoria). Hecho primero el de Trading (`team/trader/`) para revisión; el usuario dio el visto bueno y se crearon los otros 8 (`banker`, `scholar`, `postman`, `reporter`, `adman`, `promoter`, `broker`, `driver`) y el de la jefa de gabinete (`team/chief/`). Cada director tiene tres "lentes" basadas en métodos públicos de expertos reales (Dinero: Bogle, Munger, Sethi; Trading: Simons, Buffett, Soros; Investigación: Feynman, Tetlock, Sagan; Bandeja: Allen, Mann, Newport; Noticias de IA: Thompson, Karpathy, Kovach y Rosenstiel; Meta Ads: Godin, Ogilvy, Hopkins; Marketing inmobiliario: Corcoran, Serhant, Vaynerchuk; Inmobiliaria: Zell, Shiller, Keller; Outreach: Carnegie, Cialdini, Voss; Jefa de gabinete: Grove, Drucker, Eisenhower). No imitan ni citan a nadie. La jefa de gabinete se llama **Eleanor Sato** (nombre propuesto por Claude; el usuario no lo había elegido). Su modelo quedó pendiente de decidir (propuesta: igual que los directores). Estos archivos son instrucciones y memoria; no hay nada corriendo solo (se confirma con el usuario antes de construir algo que corra solo).
+
 ## Registro de construcción
 
 ### Día 1 — 2026-11-02 (hora de Costa Rica; en UTC ya era 2026-11-03)
