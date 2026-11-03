@@ -102,6 +102,29 @@
     }
   });
 
+  // tarjeta al pasar el ratón: nombre, qué hace en una frase y a quién reporta
+  const JOBS = {
+    banker: 'Cuida tu dinero: cuentas, gastos y presupuestos.', trader: 'Analiza mercados y propone operaciones simuladas, con su riesgo.',
+    scholar: 'Investiga a fondo cualquier tema que le pidas.', postman: 'Ordena tu bandeja de entrada y tu email.',
+    reporter: 'Vigila y verifica las noticias de IA.', adman: 'Diseña y mide campañas de anuncios en Meta.',
+    promoter: 'Hace el marketing de propiedades inmobiliarias.', broker: 'Se ocupa de terrenos y propiedades.',
+    driver: 'Lleva tus mensajes y hace el outreach con otras personas.', mayor: 'Coordina a los directores y reparte tus órdenes.',
+  };
+  function cardFor(d) {
+    if (d.isWorker) { const boss = people[d.director]; return { job: 'Ayuda a ' + boss.name + ' con las tareas que su director le asigna y revisa.', boss: 'Reporta a: ' + boss.name + ' (' + boss.role + ')' }; }
+    if (d.chief) return { job: JOBS.mayor, boss: 'Reporta a: ti (Chief Human Officer)' };
+    return { job: JOBS[d.id] || d.role, boss: 'Reporta a: ' + people.mayor.name + ' (jefa de gabinete)' };
+  }
+  V.onHover = (d, x, y) => {
+    const c = $('hovercard');
+    if (!d) { c.classList.add('hidden'); return; }
+    const k = cardFor(d);
+    $('hcName').textContent = d.name + ' · ' + d.role; $('hcJob').textContent = k.job; $('hcBoss').textContent = k.boss;
+    c.classList.remove('hidden');
+    c.style.left = Math.max(6, Math.min(window.innerWidth - c.offsetWidth - 6, x + 14)) + 'px';
+    c.style.top = Math.max(6, Math.min(window.innerHeight - c.offsetHeight - 6, y + 16)) + 'px';
+  };
+  V.onPick = d => openChat(d.id);
   fetch('/__helper.json').then(r => r.json()).then(j => {
     helper = j; $('conn').textContent = j.fake ? 'Programita conectado (modo prueba)' : 'Programita conectado';
   }).catch(() => { $('conn').textContent = 'Sin programita: el chat no contestará'; });

@@ -1852,7 +1852,7 @@
       else if (scene === 'interior' && a.mode === 'room' && a.room === String(curInterior.key)) { ax = a.rx; ay = a.ry; }
       else continue;
       const d = Math.hypot(px - ax, (py - ay) * 1.3);
-      if (d < (MEET.userSeated ? 80 : 40) && d < bd) { bd = d; best = a; }
+      if (d < (MEET.userSeated ? 1e9 : 40) && d < bd) { bd = d; best = a; }
     }
     return best && best.def;
   }
@@ -2008,7 +2008,27 @@
   let drag = null;
   const pointers = new Map();
   let pinchDist = 0;
+  cv.addEventListener('pointermove', e => { // tarjeta al pasar el ratón sobre un personaje
+    if (!window.VILLAGE.onHover) return;
+    window.VILLAGE.onHover(pointers.size ? null : agentAtScreen(e.clientX, e.clientY), e.clientX, e.clientY);
+  });
+  cv.addEventListener('pointerleave', () => { if (window.VILLAGE.onHover) window.VILLAGE.onHover(null); });
+  let clickStart = null;
+  function agentAtScreen(mx, my) { // personaje bajo el clic (en el pueblo o en la habitación actual)
+    const v = curView(), sc = scaleOf(), wx = v.cx + (mx - cssW / 2) / sc, wy = v.cy + (my - cssH / 2) / sc;
+    let best = null, bd = 1e9;
+    for (const a of AGENTS) {
+      if (!a.active) continue;
+      let ax, ay;
+      if (scene === 'world' && a.mode === 'world') { ax = a.x; ay = a.y; }
+      else if (scene === 'interior' && a.mode === 'room' && a.room === String(curInterior.key)) { ax = a.rx; ay = a.ry; }
+      else continue;
+      if (Math.abs(wx - ax) < 10 && wy > ay - 26 && wy < ay + 3) { const d = Math.hypot(wx - ax, wy - (ay - 12)); if (d < bd) { bd = d; best = a; } }
+    }
+    return best && best.def;
+  }
   cv.addEventListener('pointerdown', e => {
+    clickStart = { x: e.clientX, y: e.clientY, t: performance.now() };
     cv.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.size === 1) { drag = { x: e.clientX, y: e.clientY }; cv.classList.add('dragging'); }
@@ -2029,7 +2049,13 @@
     }
   });
   const endPointer = e => { pointers.delete(e.pointerId); drag = null; pinchDist = 0; if (!pointers.size) cv.classList.remove('dragging'); };
-  cv.addEventListener('pointerup', endPointer);
+  cv.addEventListener('pointerup', e => {
+    if (clickStart && pointers.size === 1 && Math.hypot(e.clientX - clickStart.x, e.clientY - clickStart.y) < 5 && performance.now() - clickStart.t < 500) {
+      const def = agentAtScreen(e.clientX, e.clientY);
+      if (def && window.VILLAGE.onPick) window.VILLAGE.onPick(def);
+    }
+    clickStart = null; endPointer(e);
+  });
   cv.addEventListener('pointercancel', endPointer);
   cv.addEventListener('dblclick', () => resetView());
   window.addEventListener('resize', resize);

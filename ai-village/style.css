@@ -84,3 +84,9 @@ canvas.dragging { cursor: grabbing; }
 #chatin { flex: 1; min-width: 0; font: inherit; font-size: 13px; color: #f6e3a4; background: rgba(0,0,0,.45); border: 1px solid rgba(216,176,74,.5); padding: 6px; border-radius: 3px; }
 #toast { position: absolute; top: 52px; left: 50%; transform: translateX(-50%); background: rgba(30,16,4,.92); border: 1px solid rgba(216,176,74,.75); padding: 6px 12px; font-size: 13px; color: #f6e3a4; z-index: 6; }
 @media (max-width: 760px) { #menubar { flex-wrap: wrap; justify-content: center; width: 96vw; } .box { width: 46vw; } }
+
+#hovercard { position: absolute; z-index: 7; max-width: 250px; padding: 7px 10px; font-size: 12px; line-height: 1.35; color: #f0dcb0;
+  background: rgba(24,12,3,.95); border: 1px solid rgba(216,176,74,.85); border-radius: 3px; pointer-events: none; text-shadow: none; }
+#hovercard.hidden { display: none; }
+#hovercard b { color: #f6e3a4; font-size: 13px; }
+#hcBoss { margin-top: 3px; color: #d8b04a; }
