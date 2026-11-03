@@ -2,17 +2,17 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>My AI Village</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main>
-    <h1>My AI Village</h1>
-    <canvas id="game" width="480" height="270" aria-label="Pueblo del Oeste visto desde arriba"></canvas>
-    <p id="hud"></p>
-    <p class="help">Flechas o WASD: moverte · Camina hacia la puerta de una casa para entrar · Esc: salir de una casa</p>
-  </main>
+  <canvas id="game" aria-label="Pueblo del Oeste visto desde arriba"></canvas>
+  <div id="overlay">
+    <div id="title">My AI Village</div>
+    <div id="hud"></div>
+    <div id="help">Flechas / WASD: moverte · Rueda o pellizco: zoom · Arrastrar: mover la cámara · + / − : zoom · 0: vista inicial · Esc: salir de una casa</div>
+  </div>
   <script src="game.js"></script>
 </body>
 </html>

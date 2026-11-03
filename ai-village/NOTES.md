@@ -32,6 +32,7 @@
   - El usuario eligió el **Lejano Oeste**, estilo "Red Dead Redemption" (ambiente polvoriento, pixel art 16 bits visto desde arriba).
   - Pieza 1 (pueblo vacío y recorrible): `ai-village/index.html`, `style.css`, `game.js`. 10 casas numeradas, ayuntamiento, plaza con bomba de agua, caminos hasta cada puerta, jardines despejados, cactus y árboles secos. Todas las casas y el ayuntamiento se pueden entrar. Un "visitante" (vaquero pequeño) se mueve con flechas/WASD; Esc sale de una casa.
   - Comprobado con navegador automático: las 10 casas y el ayuntamiento se entran y se sale de ellos, sin errores.
+  - Pieza 2 (alta resolución, opción B): el usuario aprobó el Lejano Oeste y pidió la máxima calidad para hacer mucho zoom. Todo se redibuja con código a la resolución real de la pantalla (Retina incluido) en cada cuadro, así que nunca se ve borroso. Arte rediseñado con más detalle (tejas y tablas individuales, ventanas con postigos, faroles con luz, humo de chimenea, bandera, interiores con muebles, luz de ventanas y fuego en la estufa). Zoom de 59% (todo el pueblo) a 800%: rueda/pellizco, teclas + y −, arrastrar para mover la cámara, 0 para volver. Pantalla completa. Probado a 2x de densidad de píxeles: sin errores, ~5 ms por cuadro.
 
 ## Datos para el total final
 - Precio por crédito de Higgsfield: _pendiente_
