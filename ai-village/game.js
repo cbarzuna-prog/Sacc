@@ -1059,7 +1059,21 @@
     R(c, '#4d8fb0', sx + 7.2, sy + 11.4, 1.4, 4); E(c, '#d8b04a', sx + 16, sy + 3, 1, 1);
     R(c, '#6a4a2c', sx + 22, sy + 8, 5, 5); R(c, '#9a6e3c', sx + 22, sy + 8, 5, 1); // cubo
   }
+  // El Chief Human Officer (tú): hoja de caminata hecha con tu foto. 4 direcciones x 4 cuadros, celdas de 120x170 px.
+  const CHIEF = { file: 'chief/walk.png' };
+  loadSpriteFile(CHIEF, 1e9); // sin versiones reducidas: se dibuja con píxeles nítidos
+  const CHIEF_ROW = { down: 0, left: 1, right: 2, up: 3 };
+  const CHIEF_CW = 120, CHIEF_CH = 170, CHIEF_BASE = 166, CHIEF_UPP = 0.15; // unidades por píxel: ~24 de alto = 1/12 de una habitación
+  function drawChief(c, x, y, t, moving, face) {
+    shadow(c, x, y, 6.2, 2.1);
+    const row = CHIEF_ROW[face] ?? 0, col = moving ? Math.floor(t * 8) % 4 : 2;
+    const k = CHIEF_UPP, bob = moving && (col === 0 || col === 2) ? 0.25 : 0;
+    const img = CHIEF.levels[0], devPerSrc = k * scaleOf() * dpr;
+    c.imageSmoothingEnabled = devPerSrc < 1; c.imageSmoothingQuality = 'high'; // ampliado: píxeles duros; reducido: suave
+    c.drawImage(img, col * CHIEF_CW, row * CHIEF_CH, CHIEF_CW, CHIEF_CH, x - CHIEF_CW / 2 * k, y - CHIEF_BASE * k - bob, CHIEF_CW * k, CHIEF_CH * k);
+  }
   function drawPlayer(c, x, y, t, moving, face) {
+    if (CHIEF.ready) { drawChief(c, x, y, t, moving, face); return; }
     const s = moving ? Math.sin(t * 14) : 0;
     const bob = moving ? Math.abs(s) * 0.7 : 0;
     shadow(c, x, y, 6.6, 2.2);
@@ -1114,7 +1128,7 @@
   }
   function unloadRoom(I) {
     const d = I && I.def;
-    if (d) { d.ready = false; d.loading = false; d.levels = null; }
+    if (d) { d.ready = false; d.loading = false; d.levels = null; d.cache = null; }
   }
   function canStandRoom(nx, ny, d) {
     const x0 = nx - 5, x1 = nx + 5, y0 = ny - 6, y1 = ny, f = d.floor;
@@ -1124,13 +1138,25 @@
     for (const s of d.solids) if (x1 > s[0] && x0 < s[2] && y1 > s[1] && y0 < s[3]) return false;
     return true;
   }
+  // Copia de la habitación ya ajustada al tamaño real de la pantalla: se calcula una vez por nivel de zoom
+  // y después se dibuja 1:1, así no se reduce la imagen de 4K en cada cuadro.
+  function roomSurface(d) {
+    const devW = Math.round(ROOM_W * scaleOf() * dpr);
+    if (devW > 3840) return d.levels[0];
+    if (d.cache && Math.abs(d.cache.width - devW) <= 2) return d.cache;
+    let lv = d.levels[0];
+    for (const L of d.levels) if (L.width >= devW) lv = L;
+    const cc = document.createElement('canvas');
+    cc.width = devW; cc.height = Math.round(devW * ROOM_H / ROOM_W);
+    const c2 = cc.getContext('2d'); c2.imageSmoothingEnabled = true; c2.imageSmoothingQuality = 'high';
+    c2.drawImage(lv, 0, 0, cc.width, cc.height);
+    d.cache = cc;
+    return cc;
+  }
   function drawRoomImage(c, d, t) {
     if (d.ready) {
-      const devW = ROOM_W * scaleOf() * dpr;
-      let lv = d.levels[0];
-      for (const L of d.levels) if (L.width >= devW) lv = L;
       c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
-      c.drawImage(lv, 0, 0, ROOM_W, ROOM_H);
+      c.drawImage(roomSurface(d), 0, 0, ROOM_W, ROOM_H);
     }
     drawPlayer(c, px, py, t, moving, face);
   }
