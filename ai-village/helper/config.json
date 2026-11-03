@@ -4,5 +4,21 @@
   "directorModel": "claude-opus-5-5",
   "workerModel": "claude-sonnet-5-5",
   "timeoutSeconds": 180,
-  "maxDelegations": 3
+  "maxDelegations": 3,
+  "access": {
+    "postman": {
+      "connectors": [
+        "Gmail",
+        "Google Calendar"
+      ],
+      "note": "Solo lectura: buscar y leer correos y ver el calendario. No puede enviar, borrar, archivar, crear borradores ni crear o cambiar eventos."
+    }
+  },
+  "smallTalk": {
+    "enabled": false,
+    "ollamaUrl": "http://127.0.0.1:11434",
+    "model": "llama3.2:3b",
+    "minSecondsBetween": 60,
+    "maxPerDay": 12
+  }
 }

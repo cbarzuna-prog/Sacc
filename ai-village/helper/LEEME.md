@@ -27,3 +27,16 @@ Las respuestas son de mentira (dicen "modo prueba"), no se usa Claude.
 ## Ajustes
 `helper/config.json`: puerto, modelos (`claude-opus-5-5` directores, `claude-sonnet-5-5` trabajadores) y tiempo máximo por respuesta.
 El "advisor" (Fable 5.1) no se puede encender desde la línea de comandos; los directores usan solo su modelo.
+
+## Acceso a tu Gmail y tu calendario (solo lectura)
+- Cassius Adeyemi (director de Bandeja y email) puede **leer** tu Gmail y ver tu Google Calendar a través de **tus conectores de claude.ai**. Está en `helper/config.json`, sección `access`.
+- Solo se permiten herramientas de lectura: buscar y leer correos, ver etiquetas, ver calendarios y eventos. **No puede** enviar, responder, borrar, archivar, crear borradores ni crear o cambiar eventos.
+- Para que funcione: en claude.ai → Ajustes → Conectores, conecta **Gmail** y **Google Calendar**, y usa Claude Code con la misma cuenta. Al abrir el programita verás la línea "Acceso a conectores: …".
+- Si Cassius dice que sigue sin acceso, casi seguro el conector no está conectado o Claude Code no tiene sesión con esa cuenta. No lo puedo probar desde la nube.
+- Lo que Claude lee de tus correos pasa por tu suscripción de Claude, como cualquier otro mensaje.
+
+## Charlas entre vecinos con un modelo local (gratis)
+- Cuando dos vecinos se cruzan, un **modelo que corre en tu computadora** (Ollama) puede escribir una charla corta. Solo se guarda si tienen algo real que decirse; si no, el modelo responde SKIP y no pasa nada. Límite: una cada 60 s y 12 por día.
+- **No usa tu plan de Claude, ni llaves de API, ni internet.** Solo habla con `127.0.0.1`.
+- Viene **apagado**: lo enciendes tú en el panel de **Charlas** (tecla C), y solo si el modelo está instalado.
+- Para instalarlo (una vez): instala Ollama desde ollama.com y en una terminal escribe `ollama pull llama3.2:3b` (unos 2 GB). Puedes cambiar de modelo en `helper/config.json` → `smallTalk.model`.

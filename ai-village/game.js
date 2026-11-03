@@ -659,11 +659,12 @@
     else { a.st = 'seated'; a.timer = agRand(30, 75); }
   }
   function updateRoomAgent(a, dt, playerHere) {
+    if (a.phoneUntil > time) { a.moving = false; return; }
     if (playerHere && Math.hypot(px - a.rx, (py - a.ry) * 1.3) < 34) a.near = true;
     if (a.st === 'seated') {
       a.moving = false; a.face = agSeat(a).face || 'down';
       a.timer -= dt;
-      if (MEET.on) agGoMeeting(a); else if (a.timer <= 0) agLeaveSeat(a);
+      if (MEET.on) agGoMeeting(a); else if (a.summoned) { a.afterLeave = agSummonWalk; agLeaveSeat(a); } else if (a.timer <= 0) agLeaveSeat(a);
       return;
     }
     if (a.st === 'meeting' || a.st === 'standing') {
@@ -696,6 +697,7 @@
     return null;
   }
   function updateWorldAgent(a, dt) {
+    if (a.phoneUntil > time || a.talkUntil > time) { a.moving = false; return; }
     if (scene === 'world' && Math.hypot(px - a.x, (py - a.y) * 1.3) < 34) { // se detiene y te mira
       a.near = true; a.moving = false; agFaceToward(a, a.x, a.y, px, py); return;
     }
@@ -721,6 +723,7 @@
     a.moving = true; a.walkT += dt;
   }
   function updateAgents(dt) {
+    for (let i = SCHED.length - 1; i >= 0; i--) if (time >= SCHED[i].t) { const f = SCHED[i].fn; SCHED.splice(i, 1); f(); }
     const key = scene === 'interior' && curInterior ? String(curInterior.key) : null;
     for (const a of AGENTS) {
       if (!a.active) { if (a.sp.ready) activateWorker(a); continue; }
@@ -728,6 +731,7 @@
       if (a.mode === 'room') updateRoomAgent(a, dt, key === a.room);
       else updateWorldAgent(a, dt);
     }
+    checkEncounters();
   }
   // posición inicial: la mitad ya está sentada y la otra mitad en su jardín
   AGENTS.forEach((a, i) => {
@@ -757,6 +761,8 @@
     shadow(c, x, y, 6.2, 2.1);
     c.imageSmoothingEnabled = k * scaleOf() * dpr < 1; c.imageSmoothingQuality = 'high';
     c.drawImage(img, col * AG_CW, row * AG_CH, AG_CW, AG_CH, x - AG_CW / 2 * k, y - AG_BASE * k, AG_CW * k, AG_CH * k);
+    if (a.phoneUntil > time) drawPhone(c, a, x, y);
+    if (a.talkUntil > time) drawTalkBubble(c, a, x, y);
   }
   function drawAgentRoom(c, a) { // dentro de su habitación; sentado, las piernas quedan tapadas por el mueble
     const s = agSeat(a), clipY = s.clip * ROOMK, sx = s.x * ROOMK;
@@ -1779,6 +1785,91 @@
     vignette.addColorStop(0, 'rgba(0,0,0,0)'); vignette.addColorStop(1, 'rgba(30,14,2,.5)');
   }
 
+  // ---------- llamar a alguien: "ven aquí", llamada de la jefa de gabinete y "vuelve al trabajo" ----------
+  const SCHED = []; // acciones con retraso, en tiempo del juego
+  function agSummonWalk(a) { // camina hasta quedar cerca de ti (o frente a la casa donde estás)
+    if (!a.summoned || MEET.on) return;
+    let tx, ty;
+    if (scene === 'world') { tx = Math.floor(px / T); ty = Math.floor((py - 3) / T); }
+    else { const k = curInterior.key, door = k === 'hall' ? HALL.doors[0] : HOUSES.find(h => h.id === k).door; tx = door[0]; ty = door[1] + 2; }
+    const [sx, sy] = agTile(a), cand = [];
+    for (let y = ty - 8; y <= ty + 8; y++) for (let x = tx - 8; x <= tx + 8; x++) if (agOk(a, x, y) && (Math.abs(x - tx) > 1 || Math.abs(y - ty) > 1 || scene !== 'world')) cand.push([x, y, Math.hypot(x - tx, y - ty)]);
+    cand.sort((p, q) => p[2] - q[2]);
+    for (const c of cand.slice(0, 6)) {
+      const p = (c[0] === sx && c[1] === sy) ? [] : agPath(a, sx, sy, c[0], c[1]);
+      if (p) { agWalkTo(a, p, () => agSummonArrive(a)); return; }
+    }
+    agWait(a, 2, () => agSummonWalk(a));
+  }
+  function agSummonArrive(a) {
+    a.face = 'down'; a.moving = false;
+    agWait(a, 1.5, () => agSummonCheck(a));
+  }
+  function agSummonCheck(a) { // sigue esperándote; si te moviste lejos, camina de nuevo
+    if (!a.summoned) return;
+    if (scene === 'world' && Math.hypot(px - a.x, py - a.y) > 52) { agSummonWalk(a); return; }
+    agWait(a, 1.5, () => agSummonCheck(a));
+  }
+  function summonAgent(id, viaChief) {
+    const a = AGENTS.find(q => q.def.id === id && q.active);
+    if (!a) return 'ausente';
+    if (MEET.on) return 'reunion';
+    const chief = AGENTS.find(q => q.def.chief);
+    if (viaChief && chief && chief !== a) { chief.phoneUntil = time + 2.8; chief.moving = false; }
+    a.summoned = true; a.postMeeting = false;
+    const start = () => {
+      if (!a.summoned || MEET.on) return;
+      if (a.mode === 'room') { a.afterLeave = agSummonWalk; if (a.st === 'seated' || a.st === 'meeting') agLeaveSeat(a); }
+      else agSummonWalk(a);
+    };
+    if (viaChief) SCHED.push({ t: time + 2.8, fn: start }); else start();
+    return 'ok';
+  }
+  function sendBack(id) {
+    const list = id === 'all' ? AGENTS.filter(q => q.summoned) : AGENTS.filter(q => q.def.id === id && q.summoned);
+    list.forEach(a => {
+      a.summoned = false;
+      if (a.mode === 'world') { if (a.def.isWorker) agYardLoop(a); else agGoHome(a); }
+      else if (a.afterLeave === agSummonWalk) a.afterLeave = null;
+    });
+    return list.length;
+  }
+  function drawPhone(c, a, x, y) { // teléfono en la mano mientras llama
+    const t = time * 8, hx = x + 6.5, hy = y - 17;
+    R(c, '#14100c', hx - 1.4, hy - 2.6, 2.8, 5.2); R(c, '#8fd0ff', hx - 0.9, hy - 2, 1.8, 3.2); R(c, '#e8e0d0', hx - 0.5, hy + 2.8, 1, 0.4);
+    for (let i = 0; i < 2; i++) {
+      const k = ((t + i * 3) % 6) / 6;
+      c.strokeStyle = `rgba(255,240,200,${0.9 * (1 - k)})`; c.lineWidth = 0.35;
+      c.beginPath(); c.arc(hx + 1.5, hy - 2.5, 1.5 + k * 3, -1.1, 0.1); c.stroke();
+    }
+  }
+
+  // ---------- encuentros: dos vecinos se cruzan y charlan (solo si lo enciendes y hay modelo local) ----------
+  const ENC = { on: false, next: 0, met: new Set(), day: '' };
+  function checkEncounters() {
+    if (!ENC.on || MEET.on || time < ENC.next) return;
+    const today = new Date().toDateString();
+    if (ENC.day !== today) { ENC.day = today; ENC.met.clear(); }
+    const w = AGENTS.filter(a => a.active && a.mode === 'world' && !a.summoned && !(a.talkUntil > time) && !(a.phoneUntil > time) && !a.near);
+    for (let i = 0; i < w.length; i++) for (let j = i + 1; j < w.length; j++) {
+      const a = w[i], b = w[j];
+      if (Math.hypot(a.x - b.x, a.y - b.y) > 24) continue;
+      const key = [a.def.id, b.def.id].sort().join('|');
+      if (ENC.met.has(key)) continue;
+      ENC.met.add(key); ENC.next = time + 60;
+      a.talkUntil = b.talkUntil = time + 7; a.moving = b.moving = false;
+      agFaceToward(a, a.x, a.y, b.x, b.y); agFaceToward(b, b.x, b.y, a.x, a.y);
+      if (window.VILLAGE.onEncounter) window.VILLAGE.onEncounter(a.def, b.def);
+      return;
+    }
+  }
+  function drawTalkBubble(c, a, x, y) { // globito con puntos mientras conversan
+    const bx = x, by = y - AG_BASE * AG_UPP - 3.5;
+    c.fillStyle = 'rgba(255,250,235,.95)'; c.beginPath(); c.ellipse(bx, by, 5.2, 3.2, 0, 0, 6.2832); c.fill();
+    c.strokeStyle = 'rgba(60,40,20,.7)'; c.lineWidth = 0.3; c.stroke();
+    for (let i = 0; i < 3; i++) { const k = 0.5 + 0.5 * Math.sin(time * 6 - i * 0.9); R(c, `rgba(60,40,20,${0.35 + 0.65 * k})`, bx - 2.6 + i * 2.6 - 0.45, by - 0.45, 0.9, 0.9); }
+  }
+
   // ---------- reunión: botones y piloto automático del jugador ----------
   let auto = null;
   function tileBfs(sx, sy, gx, gy) {
@@ -1830,7 +1921,7 @@
   function callMeeting() {
     if (MEET.on) return;
     MEET.on = true; MEET.stagger = 0; MEET.userGoing = true; MEET.userSeated = false; MEET.userLeaving = false;
-    AGENTS.forEach(a => { if (a.active) { a.afterLeave = null; a.postMeeting = false; agGoMeeting(a); } });
+    AGENTS.forEach(a => { if (a.active) { a.summoned = false; a.afterLeave = null; a.postMeeting = false; agGoMeeting(a); } });
   }
   function endMeeting() {
     if (!MEET.on) return;
@@ -2074,7 +2165,10 @@
 
   // ayudas para revisar el pueblo (no afectan al juego)
   window.VILLAGE = {
-    callMeeting, endMeeting, nearestAgent,
+    callMeeting, endMeeting, nearestAgent, summon: summonAgent, sendBack,
+    setEncounters: on => { ENC.on = !!on; ENC.next = time + 20; },
+    roster: () => AGENTS.filter(a => a.active).map(a => a.def),
+    summoned: () => AGENTS.filter(q => q.summoned).map(q => q.def.id),
     meeting: () => (MEET.on ? 'on' : 'off'),
     meetingInfo: () => ({ on: MEET.on, userSeated: MEET.userSeated, userGoing: MEET.userGoing }),
     where: () => scene === 'world' ? 'pueblo' : String(curInterior.key),
@@ -2090,6 +2184,7 @@
     solidAt: (tx, ty) => solid[ty][tx],
     agentOk: (id, tx, ty) => { const a = AGENTS.find(q => q.def.id === id); return agOk(a, tx, ty); },
     seatsFree: () => AGENTS.map(a => { const d = ROOM_DEFS[String(a.def.house)], pl = agRoomPlan(a); return { id: a.def.id, points: pl.pts.length, last: pl.pts[pl.pts.length - 1].map(Math.round), pathFree: pl.pts.slice(0, -1).every(p => canStandRoom(p[0], p[1], d)) }; }),
+    meetAt: (ia, ib) => { const a = AGENTS.find(q => q.def.id === ia), b = AGENTS.find(q => q.def.id === ib); [a, b].forEach((q, i) => { q.mode = 'world'; q.x = 20 * T + 8 + i * 12; q.y = 12 * T + 10; q.path = []; q.st = 'wait'; q.timer = 99; q.onWait = null; q.talkUntil = 0; q.summoned = false; }); ENC.next = 0; },
     forceLeaveSeats: () => AGENTS.forEach(a => { if (a.st === 'seated') a.timer = 0; }),
   };
 })();

@@ -90,3 +90,27 @@ canvas.dragging { cursor: grabbing; }
 #hovercard.hidden { display: none; }
 #hovercard b { color: #f6e3a4; font-size: 13px; }
 #hcBoss { margin-top: 3px; color: #d8b04a; }
+
+/* panel izquierdo con pestañas: se puede cambiar de tamaño arrastrando la esquina de abajo a la derecha */
+#logbox { --av: 56px; --nm: 13px; bottom: auto; width: 380px; height: min(72vh, 640px); min-width: 260px; min-height: 240px; max-width: 80vw; max-height: calc(100vh - 130px); resize: both; overflow: hidden; }
+#logbox > header { align-items: center; gap: 8px; }
+.tabs { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
+.tab, .sizer button, #talkToggle { font: inherit; font-size: 12px; color: #f0dcb0; background: rgba(0,0,0,.35); border: 1px solid rgba(216,176,74,.4); padding: 3px 8px; cursor: pointer; border-radius: 3px; }
+.tab.on { background: #7a2e22; border-color: #e8a070; color: #fff3d0; }
+.tab.hidden { display: none; }
+.sizer { display: flex; gap: 3px; }
+.pane { display: none; flex: 1; min-height: 0; flex-direction: column; }
+.pane.on { display: flex; }
+#roster { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; max-height: 45%; overflow-y: auto; border-bottom: 1px solid rgba(216,176,74,.3); }
+.tile { display: flex; flex-direction: column; align-items: center; width: calc(var(--av) + 22px); padding: 4px 2px; cursor: pointer; border: 1px solid transparent; border-radius: 4px; background: rgba(255,230,170,.05); }
+.tile:hover { background: rgba(255,230,170,.14); }
+.tile.sel { border-color: #e8c060; background: rgba(160,80,30,.45); }
+.tile img, .tile .allpic { width: var(--av); height: var(--av); image-rendering: pixelated; object-fit: cover; border-radius: 4px; background: rgba(0,0,0,.35); }
+.tile .allpic { display: flex; align-items: center; justify-content: center; font-size: calc(var(--av) * .55); image-rendering: auto; }
+.tile span { font-size: var(--nm); line-height: 1.15; text-align: center; margin-top: 3px; color: #f6e3a4; word-break: break-word; }
+#meetnote { font-size: 11px; color: #cdb88e; padding: 2px 10px; min-height: 14px; }
+#meetform { display: flex; gap: 6px; padding: 8px; border-top: 1px solid rgba(216,176,74,.4); }
+#meetin { flex: 1; min-width: 0; font: inherit; font-size: 13px; color: #f6e3a4; background: rgba(0,0,0,.45); border: 1px solid rgba(216,176,74,.5); padding: 6px; border-radius: 3px; }
+#meetform button { font: inherit; font-size: 13px; color: #f6e3a4; background: rgba(30,16,4,.88); border: 1px solid rgba(216,176,74,.75); padding: 6px 12px; cursor: pointer; border-radius: 3px; }
+#talkbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 10px; font-size: 11.5px; color: #cdb88e; border-bottom: 1px solid rgba(216,176,74,.3); }
+.m small b { color: #f6e3a4; }

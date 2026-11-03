@@ -15,11 +15,26 @@
       <button id="btnMeet" type="button">📣 Convocar reunión</button>
       <button id="btnChief" type="button" title="Doble toque de M">💬 Jefa de gabinete</button>
       <button id="btnLog" type="button">📜 Registro</button>
+      <button id="btnTalk" type="button" title="Tecla C">🗨️ Charlas</button>
       <span id="conn" title="Estado del programita"></span>
     </div>
     <aside id="logbox" class="box hidden">
-      <header><b>Registro de la jefa de gabinete</b><button class="x" data-close="logbox" type="button" aria-label="Cerrar">×</button></header>
-      <div class="msgs" id="logmsgs"></div>
+      <header>
+        <div class="tabs"><button type="button" class="tab" data-tab="reunion" id="tabReunion">Reunión</button><button type="button" class="tab" data-tab="registro">Registro</button><button type="button" class="tab" data-tab="charlas">Charlas</button></div>
+        <div class="sizer" title="Tamaño de retratos y nombres"><button type="button" id="szDown">A−</button><button type="button" id="szUp">A+</button></div>
+        <button class="x" data-close="logbox" type="button" aria-label="Cerrar">×</button>
+      </header>
+      <section class="pane" id="paneReunion">
+        <div id="roster"></div>
+        <div class="msgs" id="meetmsgs"></div>
+        <div id="meetnote"></div>
+        <form id="meetform"><input id="meetin" type="text" autocomplete="off" maxlength="1000" placeholder="Habla con todos o con quien elijas"><button type="submit">Enviar</button></form>
+      </section>
+      <section class="pane" id="paneRegistro"><div class="msgs" id="logmsgs"></div></section>
+      <section class="pane" id="paneCharlas">
+        <div id="talkbar"><span id="talkstatus"></span><button type="button" id="talkToggle">Encender</button></div>
+        <div class="msgs" id="talkmsgs"></div>
+      </section>
     </aside>
     <aside id="chatbox" class="box hidden">
       <header><div><b id="chatName"></b><div id="chatRole"></div></div><button class="x" data-close="chatbox" type="button" aria-label="Cerrar">×</button></header>
@@ -28,7 +43,7 @@
     </aside>
     <div id="toast" class="hidden"></div>
     <div id="hovercard" class="hidden"><b id="hcName"></b><div id="hcJob"></div><div id="hcBoss"></div></div>
-    <div id="help">Flechas / WASD: moverte · Rueda o pellizco: zoom · Arrastrar: mover la cámara · + / − : zoom · 0: vista inicial · Esc: salir de una casa · T o clic en un personaje: hablarle · M M (dos veces): jefa de gabinete</div>
+    <div id="help">Flechas / WASD: moverte · Rueda o pellizco: zoom · Arrastrar: mover la cámara · + / − : zoom · 0: vista inicial · Esc: salir de una casa · T o clic en un personaje: hablarle · M M (dos veces): jefa de gabinete · C: charlas de los vecinos</div>
   </div>
   <script src="directors.js"></script>
   <script src="workers.js"></script>

@@ -90,3 +90,9 @@ Decisiones del usuario: asientos con la mitad de arriba del sprite de perfil (op
 - Trabajadores: aparecen solo cuando existe `agents/w_<director>.png`; viven en el jardín de su director, pasean seguido y en la reunión se paran junto a la pared. Faltan las 9 hojas con chaleco amarillo.
 - Chat: T junto a alguien abre la caja de la derecha; doble M abre la de la jefa de gabinete y el registro. Órdenes a la jefa se reparten a directores (máx. 3 por mensaje).
 - Programita: `node helper/server.js` (o `--fake`). Ver `helper/LEEME.md`. Probado en modo prueba; las llamadas reales a Claude Code no se pueden probar en la nube.
+
+### Llamadas, charlas y acceso (siguiente tanda)
+- "Eleanor, llama a X" (teléfono con ondas y línea en el Registro), "X, ven aquí", "vuelve al trabajo": las entiende el juego por palabras clave, sin gastar Claude.
+- Panel izquierdo con pestañas Reunión / Registro / Charlas (tecla C), tamaño ajustable (arrastrar esquina, A− / A+). En la reunión: lista con retratos y "Todos" (cada uno contesta por separado, 3 a la vez).
+- Charlas entre vecinos: modelo local (Ollama), apagado por defecto, solo si hay algo real que decir; no gasta el plan.
+- Acceso de Cassius (Bandeja y email): Gmail + Google Calendar, solo lectura, vía conectores. Supuesto: el mensaje del usuario traía los corchetes sin llenar ([director], [inbox y calendario], [Gmail]); se interpretó como el director de Bandeja y email. Sin probar con Claude real.
