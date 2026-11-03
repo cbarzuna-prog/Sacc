@@ -273,13 +273,13 @@
     bolsa: { file: 'sprites/bolsa.png', w: 1248, h: 1093, width: 86, name: 'BOLSA', plate: [381, 564, 487, 87], tcol: '#7be08a', lights: [[439, 773], [814, 773]] },
   };
   const SPRITE_FOR = { 1: 'banco', 2: 'bolsa', 3: 'archivo', 4: 'correo', 5: 'gaceta', 6: 'metaads', 7: 'promotora', 8: 'tierras', 9: 'express', 10: 'mansion' };
-  function loadSpriteFile(def) {
+  function loadSpriteFile(def, minW = 48) {
     def.ready = false;
     const img = new Image();
     img.onload = () => { // versiones reducidas (1/2, 1/4...) para que se vea nítido a cualquier zoom
       def.levels = [img];
       let cur = img;
-      while (cur.width / 2 >= 48) {
+      while (cur.width / 2 >= minW) {
         const c2c = document.createElement('canvas');
         c2c.width = Math.round(cur.width / 2); c2c.height = Math.round(cur.height / 2);
         const c2 = c2c.getContext('2d'); c2.imageSmoothingQuality = 'high'; c2.drawImage(cur, 0, 0, c2c.width, c2c.height);
@@ -1085,6 +1085,56 @@
   }
 
   // ---------- interiores ----------
+  // ---------- habitaciones con arte de Canva (se usan si el archivo existe) ----------
+  // Las medidas de abajo están en píxeles de la imagen (1680×944). floor = suelo donde se puede caminar,
+  // door = ancho de la puerta de abajo, solids = muebles que bloquean el paso.
+  // En el juego la habitación mide 512×288 unidades: una persona de pie (24) es 1/12 del alto, como pediste.
+  const ROOM_W = 512, ROOM_H = 288;
+  const ROOM_SRC = {
+    hall: { file: 'rooms/hall.jpg', floor: [105, 150, 1585, 885], door: [765, 915], solids: [[660, 170, 1020, 815], [105, 415, 212, 700], [1160, 25, 1320, 175]] },
+    1: { file: 'rooms/banco.jpg', floor: [45, 145, 1625, 885], door: [770, 905], solids: [[165, 270, 432, 500], [715, 218, 1440, 385], [55, 50, 155, 190], [1520, 50, 1625, 190], [55, 755, 155, 890], [1515, 755, 1625, 890]] },
+    2: { file: 'rooms/bolsa.jpg', floor: [30, 140, 1650, 890], door: [770, 910], solids: [[118, 195, 372, 420], [603, 190, 862, 420], [715, 590, 968, 815], [430, 140, 532, 308], [940, 140, 1037, 308], [1550, 225, 1647, 392], [430, 655, 532, 822], [1105, 655, 1205, 822], [1468, 655, 1567, 822], [118, 548, 332, 760], [1155, 240, 1462, 492]] },
+    3: { file: 'rooms/archivo.jpg', floor: [70, 155, 1610, 885], door: [790, 890], solids: [[303, 368, 530, 595], [798, 228, 892, 352], [1095, 220, 1198, 392], [873, 490, 1085, 708], [1330, 262, 1525, 442], [1330, 582, 1525, 762], [78, 108, 128, 225], [1545, 108, 1597, 225], [78, 738, 128, 852], [1545, 738, 1597, 852], [985, 100, 1040, 205]] },
+    4: { file: 'rooms/correo.jpg', floor: [85, 160, 1590, 895], door: [785, 865], solids: [[123, 530, 1222, 742], [1145, 185, 1462, 428]] },
+    6: { file: 'rooms/metaads.jpg', floor: [25, 140, 1650, 880], door: [790, 890], solids: [[130, 125, 350, 330], [85, 360, 295, 555], [470, 135, 570, 330], [565, 360, 668, 568], [470, 570, 572, 778], [665, 172, 785, 252], [60, 515, 135, 660], [62, 678, 148, 850], [212, 685, 382, 850], [1160, 262, 1450, 585], [1505, 100, 1615, 295], [1563, 462, 1648, 620], [1272, 760, 1440, 850], [40, 55, 128, 205], [1540, 700, 1640, 850]] },
+    7: { file: 'rooms/promotora.jpg', floor: [40, 150, 1640, 880], door: [775, 895], solids: [[230, 295, 505, 590], [888, 278, 1325, 590], [48, 213, 125, 665], [1555, 213, 1632, 665], [1415, 192, 1505, 382], [1195, 665, 1282, 828], [1345, 635, 1415, 828], [48, 45, 135, 195], [1545, 45, 1635, 195], [48, 722, 135, 865], [1545, 722, 1635, 865]] },
+    8: { file: 'rooms/tierras.jpg', floor: [55, 195, 1635, 880], door: [770, 905], solids: [[90, 45, 290, 255], [1150, 35, 1410, 195], [1520, 35, 1630, 215], [415, 235, 520, 420], [113, 350, 265, 555], [362, 493, 655, 740], [72, 613, 190, 780], [1075, 330, 1350, 605], [1515, 205, 1600, 395], [1542, 378, 1632, 615], [1525, 645, 1635, 825]] },
+    9: { file: 'rooms/express.jpg', floor: [30, 200, 1645, 880], door: [785, 895], solids: [[180, 232, 478, 500], [45, 622, 178, 825], [180, 675, 265, 820], [38, 115, 115, 265], [1128, 165, 1415, 270], [1503, 105, 1645, 270], [1100, 435, 1545, 612], [1500, 418, 1645, 598], [1190, 700, 1560, 848], [1562, 738, 1645, 880]] },
+    10: { file: 'rooms/mansion.jpg', floor: [45, 230, 1635, 885], door: [775, 905], solids: [[675, 215, 1005, 515], [750, 105, 930, 240], [160, 195, 255, 335], [1458, 185, 1540, 290], [170, 625, 450, 858], [1188, 635, 1440, 785], [1228, 772, 1405, 858], [1482, 665, 1600, 810], [292, 150, 350, 230], [1325, 150, 1385, 230]] },
+    5: { file: 'rooms/gaceta.jpg', floor: [30, 255, 1650, 890], door: [775, 890], solids: [[200, 400, 455, 655], [1088, 283, 1432, 565], [1472, 338, 1612, 522], [1455, 525, 1642, 652], [1148, 640, 1292, 817], [1290, 640, 1422, 817], [1455, 705, 1642, 868], [40, 678, 118, 858], [40, 392, 118, 522], [125, 758, 232, 852], [1530, 180, 1632, 330], [150, 255, 262, 285]] },
+  };
+  const ROOM_DEFS = {};
+  for (const key in ROOM_SRC) {
+    const s = ROOM_SRC[key], k = ROOM_W / 1680;
+    ROOM_DEFS[key] = { file: s.file, floor: s.floor.map(v => v * k), door: s.door.map(v => v * k), solids: s.solids.map(r => r.map(v => v * k)), ready: false, loading: false };
+  }
+  function loadRoom(I) { // la imagen se carga al entrar y se suelta al salir, para no gastar memoria
+    const d = I.def;
+    if (d && !d.ready && !d.loading) { d.loading = true; loadSpriteFile(d, 480); }
+  }
+  function unloadRoom(I) {
+    const d = I && I.def;
+    if (d) { d.ready = false; d.loading = false; d.levels = null; }
+  }
+  function canStandRoom(nx, ny, d) {
+    const x0 = nx - 5, x1 = nx + 5, y0 = ny - 6, y1 = ny, f = d.floor;
+    const inFloor = x0 >= f[0] && x1 <= f[2] && y0 >= f[1] && y1 <= f[3];
+    const inDoor = x0 >= d.door[0] && x1 <= d.door[1] && y0 >= f[1] && y1 <= ROOM_H - 1;
+    if (!inFloor && !inDoor) return false;
+    for (const s of d.solids) if (x1 > s[0] && x0 < s[2] && y1 > s[1] && y0 < s[3]) return false;
+    return true;
+  }
+  function drawRoomImage(c, d, t) {
+    if (d.ready) {
+      const devW = ROOM_W * scaleOf() * dpr;
+      let lv = d.levels[0];
+      for (const L of d.levels) if (L.width >= devW) lv = L;
+      c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+      c.drawImage(lv, 0, 0, ROOM_W, ROOM_H);
+    }
+    drawPlayer(c, px, py, t, moving, face);
+  }
+
   const BLANKETS = ['#7a2e2e', '#2e4a6a', '#4a6a3a', '#8a6a2e', '#5a3a6a'];
   const FLOORS = ['#9a6a3e', '#8f6238', '#a0703f', '#8a5e36'];
   const CURTAINS = ['#8a2e2e', '#2e5a6a', '#6a5a2e', '#5a2e5a'];
@@ -1122,6 +1172,7 @@
       key, id, isHall, sol, items, floor: FLOORS[id % FLOORS.length], blanket: BLANKETS[id % BLANKETS.length],
       name: isHall ? 'AYUNTAMIENTO' : INFO[id].name, title: isHall ? 'Ayuntamiento' : INFO[id].title,
       curtain: CURTAINS[id % CURTAINS.length], poster: 3 + (id * 5) % 9,
+      def: ROOM_DEFS[key],
     };
   }
   const INTERIORS = { hall: makeInterior('hall') };
@@ -1280,8 +1331,13 @@
   const views = { world: { rel: 1, cx: px, cy: py, free: false }, interior: { rel: 1, cx: IWU / 2, cy: IHU / 2, free: false } };
   const MAXREL = 8;
   const curView = () => views[scene];
-  const dims = (s = scene) => (s === 'world' ? [WU, HU] : [IWU, IHU]);
-  const baseScale = (s = scene) => (s === 'world' ? Math.min(cssW / 480, cssH / 270) : Math.min(cssW / (IWU * 1.2), cssH / (IHU * 1.2)));
+  const roomImg = () => !!(curInterior && curInterior.def);
+  const dims = (s = scene) => (s === 'world' ? [WU, HU] : (roomImg() ? [ROOM_W, ROOM_H] : [IWU, IHU]));
+  const baseScale = (s = scene) => {
+    if (s === 'world') return Math.min(cssW / 480, cssH / 270);
+    const [w, h] = dims(s);
+    return roomImg() ? Math.min(cssW / w, cssH / h) : Math.min(cssW / (w * 1.2), cssH / (h * 1.2));
+  };
   const minRel = (s = scene) => (s === 'world' ? Math.min(cssW / WU, cssH / HU) / baseScale(s) : 0.5);
   const scaleOf = (s = scene) => views[s].rel * baseScale(s);
 
@@ -1333,7 +1389,10 @@
   function enterBuilding(key, door) {
     go(() => {
       scene = 'interior'; curInterior = INTERIORS[key]; enteredFrom = door;
-      px = 7 * T + 8; py = 9 * T + 14; face = 'up';
+      const d = curInterior.def;
+      if (d) { px = (d.door[0] + d.door[1]) / 2; py = d.floor[3] - 3; loadRoom(curInterior); }
+      else { px = 7 * T + 8; py = 9 * T + 14; }
+      face = 'up';
       resetView('interior');
     });
   }
@@ -1342,6 +1401,7 @@
       scene = 'world';
       const [dx, dy] = enteredFrom;
       px = dx * T + 8; py = (dy + 1) * T + 10; face = 'down';
+      unloadRoom(curInterior);
       curInterior = null;
       views.world.free = false;
     });
@@ -1361,16 +1421,18 @@
       }
       if (vx && vy) { vx *= 0.7071; vy *= 0.7071; }
       const sp = 70 * dt;
+      const room = scene === 'interior' && curInterior.def;
       const grid = scene === 'world' ? solid : curInterior.sol;
       const gw = scene === 'world' ? MW : IW, gh = scene === 'world' ? MH : IH;
-      if (vx && canStand(px + vx * sp, py, grid, gw, gh)) px += vx * sp;
-      if (vy && canStand(px, py + vy * sp, grid, gw, gh)) py += vy * sp;
+      const can = (nx, ny) => (room ? canStandRoom(nx, ny, room) : canStand(nx, ny, grid, gw, gh));
+      if (vx && can(px + vx * sp, py)) px += vx * sp;
+      if (vy && can(px, py + vy * sp)) py += vy * sp;
       moving = !!(vx || vy);
       const tx = Math.floor(px / T), ty = Math.floor((py - 3) / T);
       if (scene === 'world') {
         for (const h of HOUSES) if (tx === h.door[0] && ty === h.door[1]) { enterBuilding(h.id, h.door); break; }
         for (const d of HALL.doors) if (tx === d[0] && ty === d[1]) { enterBuilding('hall', d); break; }
-      } else if (tx === 7 && ty === 10) exitBuilding();
+      } else if (room ? py >= room.floor[3] + 8 : (tx === 7 && ty === 10)) exitBuilding();
     }
     const v = curView();
     if (!v.free) { v.cx += (px - v.cx) * Math.min(1, dt * 10); v.cy += (py - 8 - v.cy) * Math.min(1, dt * 10); }
@@ -1418,9 +1480,12 @@
     if (scene === 'world') drawWorld(ctx, time, L, Tp, L + cssW / sc, Tp + cssH / sc);
     else {
       R(ctx, '#0d0804', L - 10, Tp - 10, cssW / sc + 20, cssH / sc + 20);
-      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, IWU, IHU); ctx.clip();
-      drawInterior(ctx, curInterior, time, py, px, moving, face);
-      ctx.restore();
+      if (curInterior.def) drawRoomImage(ctx, curInterior.def, time);
+      else {
+        ctx.save(); ctx.beginPath(); ctx.rect(0, 0, IWU, IHU); ctx.clip();
+        drawInterior(ctx, curInterior, time, py, px, moving, face);
+        ctx.restore();
+      }
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = 'rgba(200,120,40,.10)'; ctx.fillRect(0, 0, cv.width, cv.height);
