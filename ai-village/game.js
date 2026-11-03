@@ -256,6 +256,71 @@
     R(c, '#ffd27a', x - 0.9, y + 0.6, 1.8, 2.8); R(c, '#fff0b8', x - 0.4, y + 1, 0.8, 1.6);
     glow(c, x, y + 2, 11, '255,190,80', 0.30 * (0.85 + 0.15 * Math.sin(t * 7 + seed)));
   }
+  // ---------- edificios con arte generado en Canva ----------
+  // Si el archivo existe, se usa esta imagen; si no, queda el dibujo hecho con código.
+  // plate = rectángulo del cartel en blanco (en píxeles de la imagen) donde se escribe el nombre con letra nítida.
+  const SPRITES = {
+    hall: { file: 'sprites/hall.png', w: 1308, h: 1051, width: 136, name: 'AYUNTAMIENTO', plate: [470, 577, 370, 80], tcol: '#f6e3a4', pole: [208, 77], lights: [[480, 772], [820, 777]] },
+    mansion: { file: 'sprites/mansion.png', w: 1342, h: 1044, width: 120, name: 'DIRECTOR', plate: [553, 733, 235, 50], tcol: '#3a2410', lights: [[551, 863], [788, 858]] },
+    express: { file: 'sprites/express.png', w: 1329, h: 1038, width: 86, name: 'EXPRESS', plate: [496, 540, 335, 65], tcol: '#f0d890', lights: [[526, 725], [801, 725]] },
+    tierras: { file: 'sprites/tierras.png', w: 1322, h: 1068, width: 86, name: 'TIERRAS', plate: [392, 393, 545, 79], tcol: '#e8c860', lights: [[216, 568], [1126, 568]] },
+    promotora: { file: 'sprites/promotora.png', w: 1356, h: 1098, width: 86, name: 'PROMOTORA', plate: [559, 553, 234, 53], tcol: '#f8efd8', lights: [[38, 674], [1318, 674]] },
+  };
+  const SPRITE_FOR = { 7: 'promotora', 8: 'tierras', 9: 'express', 10: 'mansion' };
+  for (const key in SPRITES) {
+    const def = SPRITES[key];
+    def.ready = false;
+    const img = new Image();
+    img.onload = () => { // versiones reducidas (1/2, 1/4...) para que se vea nítido a cualquier zoom
+      def.levels = [img];
+      let cur = img;
+      while (cur.width / 2 >= 160) {
+        const c2c = document.createElement('canvas');
+        c2c.width = Math.round(cur.width / 2); c2c.height = Math.round(cur.height / 2);
+        const c2 = c2c.getContext('2d'); c2.imageSmoothingQuality = 'high'; c2.drawImage(cur, 0, 0, c2c.width, c2c.height);
+        def.levels.push(c2c); cur = c2c;
+      }
+      def.ready = true;
+    };
+    img.src = def.file;
+  }
+  function spritePlace(def, fx, fy, fw, fh) {
+    const s = def.width / def.w;
+    return { x: fx + fw / 2 - def.width / 2, y: fy + fh + 3 - def.h * s, w: def.width, h: def.h * s, s };
+  }
+  function drawSprite(c, def, p, t, seed) {
+    const devW = p.w * scaleOf() * dpr;
+    let lv = def.levels[0];
+    for (const L of def.levels) if (L.width >= devW) lv = L;
+    E(c, 'rgba(40,24,10,.30)', p.x + p.w / 2, p.y + p.h - 1, p.w * 0.46, 3.2);
+    c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+    c.drawImage(lv, p.x, p.y, p.w, p.h);
+    const [qx, qy, qw, qh] = def.plate, cx = p.x + (qx + qw / 2) * p.s, cy = p.y + (qy + qh / 2) * p.s;
+    const maxW = qw * p.s * 0.88, maxS = qh * p.s * 0.6;
+    c.font = `bold ${maxS}px "Courier New", monospace`;
+    const size = Math.min(maxS, maxS * maxW / c.measureText(def.name).width);
+    label(c, def.name, cx + 0.3, cy + 0.4, 'rgba(0,0,0,.45)', size);
+    label(c, def.name, cx, cy, def.tcol, size);
+    (def.lights || []).forEach(([lx, ly], i) => glow(c, p.x + lx * p.s, p.y + ly * p.s, 11, '255,190,80', 0.26 * (0.85 + 0.15 * Math.sin(t * 7 + seed + i * 2))));
+  }
+  function drawSpriteFor(c, h, t) {
+    const key = SPRITE_FOR[h.id], def = key && SPRITES[key];
+    if (!def || !def.ready) return false;
+    drawSprite(c, def, spritePlace(def, h.x * T, h.y * T, h.w * T, h.h * T), t, h.id);
+    return true;
+  }
+  function drawHallSprite(c, t) {
+    const def = SPRITES.hall;
+    if (!def.ready) return false;
+    drawSprite(c, def, spritePlace(def, HALL.x * T, HALL.y * T, HALL.w * T, HALL.h * T), t, 1);
+    return true;
+  }
+  function hallAnchor() { // de dónde salen los cables del telégrafo
+    const def = SPRITES.hall;
+    if (def.ready) { const p = spritePlace(def, HALL.x * T, HALL.y * T, HALL.w * T, HALL.h * T); return [p.x + def.pole[0] * p.s, p.y + def.pole[1] * p.s]; }
+    return [HALL.x * T + 25, HALL.y * T + 8];
+  }
+
   // ---------- identidad de cada edificio según el trabajo del agente ----------
   const INFO = {
     1: { name: 'BANCO', title: 'Banco · Dinero', roof: '#3f4852', wall: '#908c84', style: 'stone', chimney: false, bars: true, sign: ['#1f3a2a', '#e8c860', '#d8b04a'] },
@@ -679,6 +744,7 @@
   }
 
   function drawHouse(c, h, t) {
+    if (drawSpriteFor(c, h, t)) return;
     if (h.id === 10) { drawMansion(c, h, t); return; }
     const r = rng(h.id * 131 + 7);
     const info = INFO[h.id];
@@ -752,6 +818,7 @@
   }
 
   function drawHall(c, t) {
+    if (drawHallSprite(c, t)) return;
     const r = rng(4242);
     c.save(); c.translate(HALL.x * T, HALL.y * T);
     R(c, 'rgba(50,30,12,.18)', 0, 92, 130, 8); R(c, 'rgba(50,30,12,.22)', 2, 92, 126, 5);
@@ -815,8 +882,8 @@
 
   // cables del telégrafo: el jefe de gabinete está conectado con todos los agentes
   function drawWires(c, t) {
-    const ax = HALL.x * T + 25, ay = HALL.y * T + 8;
-    c.strokeStyle = 'rgba(42,28,16,.55)'; c.lineWidth = 0.4;
+    const [ax, ay] = hallAnchor();
+    c.strokeStyle = 'rgba(42,28,16,.34)'; c.lineWidth = 0.3;
     HOUSES.forEach(h => {
       const bx = h.x * T + h.w * T / 2, by = h.y * T + 8;
       const mx = (ax + bx) / 2, my = (ay + by) / 2 + 10 + Math.hypot(bx - ax, by - ay) * 0.07;
