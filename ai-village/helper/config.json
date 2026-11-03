@@ -1,0 +1,8 @@
+{
+  "port": 8787,
+  "claudeCommand": "claude",
+  "directorModel": "claude-opus-5-5",
+  "workerModel": "claude-sonnet-5-5",
+  "timeoutSeconds": 180,
+  "maxDelegations": 3
+}

@@ -11,9 +11,27 @@
   <div id="overlay">
     <div id="title">My AI Village</div>
     <div id="hud"></div>
-    <div id="help">Flechas / WASD: moverte · Rueda o pellizco: zoom · Arrastrar: mover la cámara · + / − : zoom · 0: vista inicial · Esc: salir de una casa</div>
+    <div id="menubar">
+      <button id="btnMeet" type="button">📣 Convocar reunión</button>
+      <button id="btnChief" type="button" title="Doble toque de M">💬 Jefa de gabinete</button>
+      <button id="btnLog" type="button">📜 Registro</button>
+      <span id="conn" title="Estado del programita"></span>
+    </div>
+    <aside id="logbox" class="box hidden">
+      <header><b>Registro de la jefa de gabinete</b><button class="x" data-close="logbox" type="button" aria-label="Cerrar">×</button></header>
+      <div class="msgs" id="logmsgs"></div>
+    </aside>
+    <aside id="chatbox" class="box hidden">
+      <header><div><b id="chatName"></b><div id="chatRole"></div></div><button class="x" data-close="chatbox" type="button" aria-label="Cerrar">×</button></header>
+      <div class="msgs" id="chatmsgs"></div>
+      <form id="chatform"><input id="chatin" type="text" autocomplete="off" maxlength="1000" placeholder="Escribe y presiona Enter"><button type="submit">Enviar</button></form>
+    </aside>
+    <div id="toast" class="hidden"></div>
+    <div id="help">Flechas / WASD: moverte · Rueda o pellizco: zoom · Arrastrar: mover la cámara · + / − : zoom · 0: vista inicial · Esc: salir de una casa · T: hablar con quien tengas cerca · M M (dos veces): jefa de gabinete</div>
   </div>
   <script src="directors.js"></script>
+  <script src="workers.js"></script>
   <script src="game.js"></script>
+  <script src="ui.js"></script>
 </body>
 </html>

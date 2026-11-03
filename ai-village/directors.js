@@ -1,6 +1,8 @@
 // Los directores de My AI Village: cada uno es dueño de un área de la vida del usuario y de una casa.
 // Solo los directores tienen casa. Los trabajadores (pasantes) todavía no existen en el pueblo.
 // El jefe de gabinete vive en el ayuntamiento. Nombres, personalidades y manías propuestos por Claude y aprobados por el usuario.
+// Hay solo 10 puestos de director: los 9 directores con casa más la jefa de gabinete. Todo agente que se agregue después es un trabajador.
+window.DIRECTOR_SPOTS = 10;
 window.DIRECTORS = [
   {
     id: 'banker', folder: 'banker', house: 1, name: 'Augustus Whitcombe', role: 'Director de Dinero',

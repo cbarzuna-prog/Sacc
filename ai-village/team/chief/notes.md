@@ -20,3 +20,5 @@ Mi memoria. La leo al empezar y la actualizo al terminar cada tarea. Corta y ord
 | Fecha | Qué decidí | Por qué | Resultado |
 |---|---|---|---|
 | 2026-11-03 | Creado como Jefa de gabinete (chief of staff); trabajo sin mover dinero ni enviar nada sin aprobación | Reglas del usuario: sin API keys ni pago por uso; el usuario decide | — |
+
+- 2026-11-03 14:33 · Chat: orden del usuario «Revisa mi presupuesto de dinero y los anuncios de meta ads»; reparto: banker, adman

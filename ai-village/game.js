@@ -421,15 +421,30 @@
   const SEATS = {
     1: { x: 300, clip: 368 }, 2: { x: 1301, clip: 336 }, 3: { x: 403, clip: 453 }, 4: { x: 1300, clip: 252 },
     5: { x: 306, clip: 497 }, 6: { x: 1311, clip: 374 }, 7: { x: 359, clip: 376 }, 8: { x: 1216, clip: 432 },
-    9: { x: 308, clip: 333 }, hall: { x: 700, clip: 372, face: 'right' },
+    9: { x: 308, clip: 333 }, hall: { x: 712, clip: 372, face: 'right', aisle: 640 },
   };
+  // ---- reunión en el ayuntamiento (medidas en píxeles de la imagen de 1680x944) ----
+  const MEET = { on: false, stagger: 0, userGoing: false, userSeated: false, userLeaving: false };
+  const MEET_Y = [345, 433, 513, 597, 682];                   // centro de cada silla de los lados
+  const MEET_ORDER = { left: ['mayor', 'banker', 'scholar', 'postman', 'reporter'], right: ['trader', 'adman', 'promoter', 'broker', 'driver'] };
+  const MEET_X = { left: 712, right: 984 }, AISLE_X = { left: 640, right: 1056 }, WALL_X = { left: 300, right: 1380 };
+  const WALK_Y = 850;                                         // pasillo libre entre la puerta y la mesa
+  const HEAD = { x: 840, clip: 275, restY: 232 };            // silla de la cabecera: la tuya
+  function meetSeatFor(a) {
+    const dirId = a.def.isWorker ? a.def.director : a.def.id;
+    let side = 'left', row = MEET_ORDER.left.indexOf(dirId);
+    if (row < 0) { side = 'right'; row = MEET_ORDER.right.indexOf(dirId); }
+    if (row < 0) return null;
+    const stand = !!a.def.isWorker;
+    return { x: stand ? WALL_X[side] : MEET_X[side], clip: MEET_Y[row] + 27, face: side === 'left' ? 'right' : 'left', stand, meet: true, aisle: stand ? WALL_X[side] : AISLE_X[side] };
+  }
   const DIR_DATA = (window.DIRECTORS && window.DIRECTORS.length) ? window.DIRECTORS : [
     { id: 'banker', house: 1 }, { id: 'trader', house: 2 }, { id: 'scholar', house: 3 }, { id: 'postman', house: 4 }, { id: 'reporter', house: 5 },
     { id: 'adman', house: 6 }, { id: 'promoter', house: 7 }, { id: 'broker', house: 8 }, { id: 'driver', house: 9 }, { id: 'mayor', house: 'hall' },
   ];
   const agRng = rng(20241103);
   const agRand = (a, b) => a + agRng() * (b - a);
-  const agSeat = a => SEATS[String(a.def.house)];
+  const agSeat = a => a.seat || SEATS[String(a.def.house)];
   const agSeatPos = a => { const s = agSeat(a); return [s.x * ROOMK, s.clip * ROOMK + 9]; };
   const agDoor = a => (a.def.house === 'hall' ? HALL.doors[0] : HOUSES[a.def.house - 1].door);
   function agYard(a) { // el jardín propio: la franja de terreno delante de su casa
@@ -445,14 +460,27 @@
   const AG_TARGETS = []; // sitios del pueblo donde pueden detenerse en un paseo: caminos y plaza, fuera de los jardines de las casas
   for (let ty = 0; ty < MH; ty++) for (let tx = 0; tx < MW; tx++) if (kind[ty][tx] > 0 && !solid[ty][tx] && !inYard(tx, ty)) AG_TARGETS.push([tx, ty]);
 
-  const AGENTS = DIR_DATA.map((d, i) => {
+  const mkAgent = (d, i, extra) => {
     const sp = { file: `agents/${d.id}.png` };
     loadSpriteFile(sp, 1e9);
-    return { def: d, sp, mode: 'room', st: 'seated', timer: agRand(2 + i * 1.5, 14 + i * 3), x: 0, y: 0, rx: 0, ry: 0, face: 'down',
-      path: [], rpath: [], walkT: agRand(0, 4), moving: false, blockT: 0, near: false, onArrive: null, onWait: null, goal: null, tail: [], yardUntil: 0, plan: null };
-  });
+    return Object.assign({ def: d, sp, mode: 'room', room: String(d.house), seat: null, plans: {}, st: 'seated', timer: agRand(2 + i * 1.5, 14 + i * 3), x: 0, y: 0, rx: 0, ry: 0, face: 'down',
+      path: [], rpath: [], walkT: agRand(0, 4), moving: false, blockT: 0, near: false, onArrive: null, onWait: null, goal: null, tail: [], yardUntil: 0, leaveAt: 0, afterLeave: null, active: true }, extra || {});
+  };
+  const AGENTS = DIR_DATA.map((d, i) => mkAgent(d, i));
   const AGENT_BY_HOUSE = {};
   AGENTS.forEach(a => { AGENT_BY_HOUSE[String(a.def.house)] = a; });
+  // Trabajadores (chaleco amarillo): solo aparecen cuando existe su hoja de personaje en agents/w_<director>.png
+  (window.WORKERS || []).forEach((w, i) => {
+    const dir = DIR_DATA.find(d => d.id === w.director);
+    if (!dir) return;
+    AGENTS.push(mkAgent(Object.assign({}, w, { house: dir.house, isWorker: true }), i, { mode: 'off', active: false }));
+  });
+  function activateWorker(a) {
+    a.active = true; a.mode = 'world';
+    const door = agDoor(a); a.x = door[0] * T + 8; a.y = (door[1] + 1) * T + 10; a.face = 'down';
+    a.yardUntil = time + agRand(6, 14); a.st = 'wait'; a.timer = agRand(0.2, 2); a.onWait = () => agYardNext(a);
+    if (MEET.on) agGoMeeting(a);
+  }
 
   function agPath(a, sx, sy, gx, gy, avoid) { // camino por casillas
     if (!agOk(a, sx, sy) || !agOk(a, gx, gy, avoid)) return null;
@@ -475,15 +503,12 @@
   }
 
   // ---- la habitación por dentro: camina de la puerta al escritorio por el suelo libre ----
-  function agRoomPlan(a) {
-    if (a.plan) return a.plan;
-    const d = ROOM_DEFS[String(a.def.house)], C = 4, gw = Math.ceil(ROOM_W / C), gh = Math.ceil(ROOM_H / C);
-    const cx2 = c => c * C + C / 2;
+  function roomBfs(d, sx, sy, seatX, seatY) { // camina por el suelo libre desde (sx,sy) hasta lo más cercano al punto destino
+    const C = 4, gw = Math.ceil(ROOM_W / C), gh = Math.ceil(ROOM_H / C), cx2 = c => c * C + C / 2;
     const ok = (cx, cy) => cx >= 0 && cy >= 0 && cx < gw && cy < gh && canStandRoom(cx2(cx), cx2(cy), d);
-    const doorX = (d.door[0] + d.door[1]) / 2, sx = Math.floor(doorX / C), sy = Math.floor((d.floor[3] - 3) / C);
-    const [seatX, seatY] = agSeatPos(a);
-    const prev = new Map(), key = (x, y) => y * gw + x, q = [[sx, sy]]; prev.set(key(sx, sy), null);
-    let best = [sx, sy], bestD = Infinity;
+    const s0 = [Math.floor(sx / C), Math.floor(sy / C)];
+    const prev = new Map(), key = (x, y) => y * gw + x, q = [s0]; prev.set(key(s0[0], s0[1]), null);
+    let best = s0, bestD = Infinity;
     for (let i = 0; i < q.length; i++) {
       const [x, y] = q[i], dd = Math.hypot(cx2(x) - seatX, cx2(y) - seatY);
       if (dd < bestD) { bestD = dd; best = [x, y]; }
@@ -497,18 +522,36 @@
     }
     const cells = []; let k = key(best[0], best[1]);
     while (k !== undefined && k !== null) { cells.push([k % gw, Math.floor(k / gw)]); const p = prev.get(k); k = p ? key(p[0], p[1]) : null; }
-    cells.reverse();
-    let pts = [[doorX, d.floor[3] + 3]].concat(cells.map(c => [cx2(c[0]), cx2(c[1])])).concat([[seatX, seatY]]);
-    const out = [pts[0]]; // quitar puntos que están en línea recta
+    return cells.reverse().map(c => [cx2(c[0]), cx2(c[1])]);
+  }
+  function straighten(pts) { // quitar puntos que están en línea recta
+    const out = [pts[0]];
     for (let i = 1; i < pts.length - 1; i++) {
       const p0 = out[out.length - 1], p1 = pts[i], p2 = pts[i + 1];
       if (Math.abs((p1[0] - p0[0]) * (p2[1] - p1[1]) - (p1[1] - p0[1]) * (p2[0] - p1[0])) > 1e-6) out.push(p1);
     }
     out.push(pts[pts.length - 1]);
-    a.plan = { pts: out };
-    return a.plan;
+    return out;
   }
-  function agEnterRoom(a) { // llegó caminando a la puerta: pasa a la habitación y camina al escritorio
+  function agRoomPlan(a) { // de la puerta al asiento (escritorio, o silla de la mesa en el ayuntamiento)
+    const s = agSeat(a), key = a.room + '|' + s.x + '|' + s.clip;
+    if (a.plans[key]) return a.plans[key];
+    const d = ROOM_DEFS[a.room], doorX = (d.door[0] + d.door[1]) / 2;
+    const [seatX, seatY] = agSeatPos(a);
+    let pts;
+    if (s.aisle) { // ayuntamiento: por el pasillo de abajo y subiendo por el lado de su silla
+      const wy = WALK_Y * ROOMK, ax = s.aisle * ROOMK;
+      pts = [[doorX, d.floor[3] + 3], [doorX, wy], [ax, wy], [ax, seatY], [seatX, seatY]];
+    } else {
+      const sx = Math.floor(doorX / 4) * 4 + 2, sy = d.floor[3] - 3;
+      const cells = roomBfs(d, sx, sy, seatX, seatY);
+      pts = [[doorX, d.floor[3] + 3]].concat(cells).concat([[seatX, seatY]]);
+    }
+    a.plans[key] = { pts: straighten(pts) };
+    return a.plans[key];
+  }
+  function agEnterRoom(a, room) { // llegó caminando a la puerta: pasa a la habitación y camina a su asiento
+    a.room = room || String(a.def.house);
     const plan = agRoomPlan(a), p0 = plan.pts[0];
     a.mode = 'room'; a.st = 'toDesk'; a.rx = p0[0]; a.ry = p0[1]; a.face = 'up'; a.moving = true; a.blockT = 0;
     a.rpath = plan.pts.slice(1).map(p => p.slice());
@@ -518,9 +561,48 @@
     a.st = 'toDoor'; a.rpath = plan.pts.slice(0, -1).reverse().map(p => p.slice());
   }
   function agLeaveRoom(a) { // llegó caminando a la puerta de la habitación: sale al pueblo, justo en la puerta
-    const door = agDoor(a);
+    const door = a.room === 'hall' ? HALL.doors[0] : HOUSES[Number(a.room) - 1].door;
     a.mode = 'world'; a.x = door[0] * T + 8; a.y = door[1] * T + 10; a.face = 'down'; a.blockT = 0; a.moving = true;
-    agWalkTo(a, [[door[0], door[1] + 1]], () => agYardLoop(a));
+    a.seat = null;
+    agWalkTo(a, [[door[0], door[1] + 1]], () => agAfterLeave(a));
+  }
+  function agAfterLeave(a) {
+    const f = a.afterLeave; a.afterLeave = null;
+    if (f) { f(a); return; }
+    if (MEET.on) agGoMeeting(a); else if (a.postMeeting) agAfterMeeting(a); else agYardLoop(a);
+  }
+  function agAfterMeeting(a) { a.postMeeting = false; if (a.def.chief) agChiefFront(a); else agYardLoop(a); }
+  function agChiefFront(a) { // la jefa de gabinete espera frente al ayuntamiento, fuera del pasillo de la puerta
+    const door = HALL.doors[0], [sx, sy] = agTile(a);
+    for (const [dx, dy] of [[-2, 2], [3, 2], [-3, 2], [4, 2]]) {
+      const tx = door[0] + dx, ty = door[1] + dy;
+      const p = agOk(a, tx, ty) && agPath(a, sx, sy, tx, ty);
+      if (p) { agWalkTo(a, p, () => { a.face = 'down'; a.yardUntil = time + 25; agWait(a, 25, () => agYardLoop(a)); }); return; }
+    }
+    agYardLoop(a);
+  }
+
+  // ---- reunión: cada uno camina al ayuntamiento y se sienta en su silla ----
+  function agGoMeeting(a) {
+    const seat = meetSeatFor(a);
+    if (!seat) return;
+    a.afterLeave = null;
+    if (a.mode === 'room') { // dentro de su casa: sale por su puerta y luego va al ayuntamiento
+      if (a.room !== 'hall') { if (a.st === 'seated') agLeaveSeat(a); return; }
+      if (a.st === 'seated' && a.seat === null && a.def.id === 'mayor') { a.seat = seat; a.st = 'meeting'; a.face = seat.face; return; }
+      return;
+    }
+    if (a.mode !== 'world') return;
+    const door = HALL.doors[0], [sx, sy] = agTile(a), p = agPath(a, sx, sy, door[0], door[1] + 1);
+    if (!p) { agWait(a, 2, () => agGoMeeting(a)); return; }
+    a.meetBound = true;
+    agWalkTo(a, p.concat([[door[0], door[1]]]), () => agEnterHall(a, seat), [[door[0], door[1]]]);
+  }
+  function agEnterHall(a, seat) { // espera si alguien acaba de entrar y está en la puerta
+    if (!MEET.on) { a.meetBound = false; agAfterMeeting(a); return; }
+    const d = ROOM_DEFS.hall, dx = (d.door[0] + d.door[1]) / 2, dy = d.floor[3] + 3;
+    if (AGENTS.some(o => o !== a && o.mode === 'room' && o.room === 'hall' && Math.abs(o.rx - dx) < 12 && Math.abs(o.ry - dy) < 14)) { agWait(a, 0.5, () => agEnterHall(a, seat)); return; }
+    a.meetBound = false; a.seat = seat; agEnterRoom(a, 'hall');
   }
 
   // ---- el pueblo ----
@@ -541,7 +623,8 @@
   }
   function agYardLoop(a) { a.yardUntil = time + agRand(16, 40); agYardNext(a); }
   function agYardNext(a) {
-    if (time >= a.yardUntil) { if (agRng() < 0.15) agVisit(a); else agGoHome(a); return; }
+    if (MEET.on) { agGoMeeting(a); return; }
+    if (time >= a.yardUntil) { if (a.def.isWorker ? agRng() < 0.7 : agRng() < 0.15) agVisit(a); else agGoHome(a); return; }
     const t = agYardPoint(a), [sx, sy] = agTile(a);
     const p = t && agPath(a, sx, sy, t[0], t[1]);
     if (!p) { agWait(a, 2.5, () => agYardNext(a)); return; }
@@ -560,6 +643,7 @@
   function agGoHome(a) { // camina hasta la puerta (nada de aparecer adentro de golpe)
     const door = agDoor(a), [sx, sy] = agTile(a), p = agPath(a, sx, sy, door[0], door[1] + 1);
     if (!p) { agWait(a, 2.5, () => agGoHome(a)); return; }
+    if (a.def.isWorker) { agWalkTo(a, p, () => agYardLoop(a)); return; } // los trabajadores no tienen casa: vuelven a su jardín
     agWalkTo(a, p.concat([[door[0], door[1]]]), () => agEnterRoom(a), [[door[0], door[1]]]);
   }
 
@@ -568,24 +652,40 @@
     const dx = tx - ax, dy = ty - ay;
     a.face = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
   }
+  function agArrive(a) { // llegó a su asiento
+    const sp = agSeatPos(a), s = agSeat(a);
+    a.rx = sp[0]; a.ry = sp[1]; a.moving = false; a.face = s.face || 'down';
+    if (s.meet) { a.st = s.stand ? 'standing' : 'meeting'; a.leaveAt = 0; }
+    else { a.st = 'seated'; a.timer = agRand(30, 75); }
+  }
   function updateRoomAgent(a, dt, playerHere) {
     if (playerHere && Math.hypot(px - a.rx, (py - a.ry) * 1.3) < 34) a.near = true;
     if (a.st === 'seated') {
       a.moving = false; a.face = agSeat(a).face || 'down';
-      if (!a.near || true) a.timer -= dt;
-      if (a.timer <= 0) agLeaveSeat(a);
+      a.timer -= dt;
+      if (MEET.on) agGoMeeting(a); else if (a.timer <= 0) agLeaveSeat(a);
       return;
     }
-    if (a.near) { a.moving = false; agFaceToward(a, a.rx, a.ry, px, py); return; } // se detiene y te mira
+    if (a.st === 'meeting' || a.st === 'standing') {
+      a.moving = false; a.face = agSeat(a).face;
+      if (!MEET.on) {
+        if (!a.leaveAt) a.leaveAt = time + 1.2 + (MEET.stagger++) * 0.9;
+        if (time >= a.leaveAt) { a.leaveAt = 0; agLeaveSeat(a); }
+      }
+      return;
+    }
+    if (a.near && !a.meetMove) { a.moving = false; agFaceToward(a, a.rx, a.ry, px, py); return; } // se detiene y te mira
     const nt = a.rpath[0];
     if (!nt) {
-      if (a.st === 'toDesk') { const s = agSeatPos(a); a.rx = s[0]; a.ry = s[1]; a.st = 'seated'; a.timer = agRand(30, 75); a.moving = false; }
-      else agLeaveRoom(a);
+      if (a.st === 'toDesk') agArrive(a); else agLeaveRoom(a);
       return;
     }
     const ddx = nt[0] - a.rx, ddy = nt[1] - a.ry, dd = Math.hypot(ddx, ddy), step = AG_SPEED * dt;
     const nx = dd <= step ? nt[0] : a.rx + ddx / dd * step, ny = dd <= step ? nt[1] : a.ry + ddy / dd * step;
     if (playerHere && agOverlap(px, py, nx, ny) && !agOverlap(px, py, a.rx, a.ry)) { a.moving = false; return; } // espera si estás en el camino
+    const other = AGENTS.find(o => o !== a && o.mode === 'room' && o.room === a.room && agOverlap(o.rx, o.ry, nx, ny) && !agOverlap(o.rx, o.ry, a.rx, a.ry));
+    if (other && (a.blockT += dt) < 1.2) { a.moving = false; return; } // deja pasar a otro, pero no se queda trabado
+    if (!other) a.blockT = 0;
     if (dd > 0.01) agFaceToward(a, a.rx, a.ry, nt[0], nt[1]);
     a.rx = nx; a.ry = ny; if (dd <= step) a.rpath.shift();
     a.moving = true; a.walkT += dt;
@@ -604,9 +704,10 @@
     if (!nt) { a.moving = false; const f = a.onArrive; a.onArrive = null; if (f) f(); return; }
     const gx = nt[0] * T + 8, gy = nt[1] * T + 10, ddx = gx - a.x, ddy = gy - a.y, dd = Math.hypot(ddx, ddy), step = AG_SPEED * dt;
     const nx = dd <= step ? gx : a.x + ddx / dd * step, ny = dd <= step ? gy : a.y + ddy / dd * step;
-    const blocker = agBlockedBy(a, nx, ny);
+    const blocker = a.ghost ? null : agBlockedBy(a, nx, ny);
     if (blocker) { // se rodean: primero esperan, luego buscan otro camino que evite al otro
       a.moving = false; a.blockT += dt;
+      if (a.blockT > 4) a.ghost = true; // atasco entre varios: pasan uno por el otro un momento para no quedarse trabados
       if (a.blockT > 2 && a.goal) {
         const avoid = new Set(); if (blocker !== 'player') avoid.add(Math.floor((blocker.y - 3) / T) * MW + Math.floor(blocker.x / T));
         const [sx, sy] = agTile(a), p = agPath(a, sx, sy, a.goal[0], a.goal[1], avoid);
@@ -616,19 +717,21 @@
     }
     a.blockT = 0;
     if (dd > 0.01) agFaceToward(a, a.x, a.y, gx, gy);
-    a.x = nx; a.y = ny; if (dd <= step) a.path.shift();
+    a.x = nx; a.y = ny; if (dd <= step) { a.path.shift(); a.ghost = false; }
     a.moving = true; a.walkT += dt;
   }
   function updateAgents(dt) {
     const key = scene === 'interior' && curInterior ? String(curInterior.key) : null;
     for (const a of AGENTS) {
+      if (!a.active) { if (a.sp.ready) activateWorker(a); continue; }
       a.near = false;
-      if (a.mode === 'room') updateRoomAgent(a, dt, key === String(a.def.house));
+      if (a.mode === 'room') updateRoomAgent(a, dt, key === a.room);
       else updateWorldAgent(a, dt);
     }
   }
   // posición inicial: la mitad ya está sentada y la otra mitad en su jardín
   AGENTS.forEach((a, i) => {
+    if (!a.active) return;
     if (i % 2 === 0) { const s = agSeatPos(a); a.rx = s[0]; a.ry = s[1]; return; }
     const door = agDoor(a); a.mode = 'world'; a.x = door[0] * T + 8; a.y = (door[1] + 1) * T + 10; a.face = 'down';
     a.yardUntil = agRand(10, 30); a.st = 'wait'; a.timer = agRand(0.2, 2.5); a.onWait = () => agYardNext(a);
@@ -655,21 +758,21 @@
     c.imageSmoothingEnabled = k * scaleOf() * dpr < 1; c.imageSmoothingQuality = 'high';
     c.drawImage(img, col * AG_CW, row * AG_CH, AG_CW, AG_CH, x - AG_CW / 2 * k, y - AG_BASE * k, AG_CW * k, AG_CH * k);
   }
-  function drawAgentRoom(c, a) { // dentro de su habitación; sentado, las piernas quedan tapadas por el escritorio
+  function drawAgentRoom(c, a) { // dentro de su habitación; sentado, las piernas quedan tapadas por el mueble
     const s = agSeat(a), clipY = s.clip * ROOMK, sx = s.x * ROOMK;
-    if (Math.abs(a.rx - sx) <= 16 && a.ry >= clipY - 40) {
+    if (!s.stand && Math.abs(a.rx - sx) <= 16 && a.ry >= clipY - 40) {
       c.save(); c.beginPath(); c.rect(0, 0, ROOM_W, clipY); c.clip();
       drawAgentAt(c, a, a.rx, a.ry, a.face, a.moving);
       c.restore();
     } else drawAgentAt(c, a, a.rx, a.ry, a.face, a.moving);
     if (a.near) drawAgentLabel(c, a, a.rx, Math.min(a.ry, clipY + 2));
   }
+  function agentsInRoom() { const k = curInterior && String(curInterior.key); return AGENTS.filter(a => a.active && a.mode === 'room' && a.room === k); }
   function agentBlocks(nx, ny) { // no puedes atravesar a un agente (salvo que ya estés encima de él)
     if (scene === 'world') {
       for (const a of AGENTS) if (a.mode === 'world' && agOverlap(a.x, a.y, nx, ny) && !agOverlap(a.x, a.y, px, py)) return true;
     } else {
-      const a = curInterior && AGENT_BY_HOUSE[String(curInterior.key)];
-      if (a && a.mode === 'room' && agOverlap(a.rx, a.ry, nx, ny) && !agOverlap(a.rx, a.ry, px, py)) return true;
+      for (const a of agentsInRoom()) if (agOverlap(a.rx, a.ry, nx, ny) && !agOverlap(a.rx, a.ry, px, py)) return true;
     }
     return false;
   }
@@ -1418,14 +1521,20 @@
     d.cache = cc;
     return cc;
   }
+  function drawPlayerRoom(c, t) { // sentado a la cabecera de la mesa, las piernas quedan debajo de la mesa
+    if (curInterior.key === 'hall' && Math.abs(px - HEAD.x * ROOMK) < 3 && py > HEAD.restY * ROOMK - 1) {
+      c.save(); c.beginPath(); c.rect(0, 0, ROOM_W, HEAD.clip * ROOMK); c.clip();
+      drawPlayer(c, px, py, t, moving, face);
+      c.restore();
+    } else drawPlayer(c, px, py, t, moving, face);
+  }
   function drawRoomImage(c, d, t) {
     if (d.ready) {
       c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
       c.drawImage(roomSurface(d), 0, 0, ROOM_W, ROOM_H);
     }
-    const a = curInterior && AGENT_BY_HOUSE[String(curInterior.key)];
-    const list = [{ y: py, f: () => drawPlayer(c, px, py, t, moving, face) }];
-    if (a && a.mode === 'room') list.push({ y: a.ry, f: () => drawAgentRoom(c, a) });
+    const list = [{ y: py, f: () => drawPlayerRoom(c, t) }];
+    agentsInRoom().forEach(a => list.push({ y: a.ry, f: () => drawAgentRoom(c, a) }));
     list.sort((p, q) => p.y - q.y).forEach(o => o.f());
   }
 
@@ -1670,6 +1779,84 @@
     vignette.addColorStop(0, 'rgba(0,0,0,0)'); vignette.addColorStop(1, 'rgba(30,14,2,.5)');
   }
 
+  // ---------- reunión: botones y piloto automático del jugador ----------
+  let auto = null;
+  function tileBfs(sx, sy, gx, gy) {
+    const prev = new Map(), key = (x, y) => y * MW + x, q = [[sx, sy]]; prev.set(key(sx, sy), null);
+    for (let i = 0; i < q.length; i++) {
+      const [x, y] = q[i];
+      if (x === gx && y === gy) {
+        const out = []; let k = key(x, y);
+        while (k !== null) { out.push([k % MW, Math.floor(k / MW)]); const p = prev.get(k); k = p ? key(p[0], p[1]) : null; }
+        return out.reverse();
+      }
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= MW || ny >= MH || solid[ny][nx] || prev.has(key(nx, ny))) continue;
+        prev.set(key(nx, ny), [x, y]); q.push([nx, ny]);
+      }
+    }
+    return null;
+  }
+  function stepAuto(dt) {
+    let left = 70 * dt; moving = true;
+    while (left > 0 && auto.pts.length) {
+      const t = auto.pts[0], dx = t[0] - px, dy = t[1] - py, d = Math.hypot(dx, dy);
+      if (d > 0.01) face = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+      if (d <= left) { px = t[0]; py = t[1]; left -= d; auto.pts.shift(); } else { px += dx / d * left; py += dy / d * left; left = 0; }
+    }
+    if (!auto.pts.length) { const f = auto.done; auto = null; moving = false; if (f) f(); }
+  }
+  const headX = () => HEAD.x * ROOMK, headRestY = () => HEAD.restY * ROOMK, headSitY = () => HEAD.clip * ROOMK + 9;
+  function startUserRoute() { // camina solo hasta el ayuntamiento y se sienta a la cabecera
+    if (scene === 'world') {
+      const door = HALL.doors[0], p = tileBfs(Math.floor(px / T), Math.floor((py - 3) / T), door[0], door[1]);
+      if (!p) { MEET.userGoing = false; return; }
+      auto = { pts: p.slice(1).map(c => [c[0] * T + 8, c[1] * T + 10]), done: null };
+    } else if (curInterior.key === 'hall') {
+      const d = ROOM_DEFS.hall, ax = AISLE_X.left * ROOMK, wy = WALK_Y * ROOMK;
+      const cells = roomBfs(d, px, py, ax, wy);
+      auto = { pts: cells.concat([[ax, wy], [ax, headRestY()], [headX(), headRestY()]]), done: () => {
+        MEET.userSeated = true; MEET.userGoing = false;
+        auto = { pts: [[headX(), headSitY()]], done: () => { face = 'down'; } };
+      } };
+    } else if (!pending) exitBuilding();
+  }
+  function startUserLeave() {
+    const d = ROOM_DEFS.hall, ax = AISLE_X.left * ROOMK, wy = WALK_Y * ROOMK, dx = (d.door[0] + d.door[1]) / 2;
+    MEET.userLeaving = true;
+    auto = { pts: [[headX(), headRestY()], [ax, headRestY()], [ax, wy], [dx, wy], [dx, d.floor[3] + 9]], done: () => { MEET.userSeated = false; MEET.userLeaving = false; } };
+  }
+  function callMeeting() {
+    if (MEET.on) return;
+    MEET.on = true; MEET.stagger = 0; MEET.userGoing = true; MEET.userSeated = false; MEET.userLeaving = false;
+    AGENTS.forEach(a => { if (a.active) { a.afterLeave = null; a.postMeeting = false; agGoMeeting(a); } });
+  }
+  function endMeeting() {
+    if (!MEET.on) return;
+    MEET.on = false; MEET.stagger = 0; MEET.userGoing = false;
+    if (MEET.userSeated) startUserLeave();
+    else if (auto) auto = null;
+    AGENTS.forEach(a => {
+      if (!a.active) return;
+      a.postMeeting = true;
+      if (a.mode === 'world' && a.meetBound) { a.meetBound = false; agAfterMeeting(a); }
+    });
+  }
+  function nearestAgent() {
+    let best = null, bd = 1e9;
+    for (const a of AGENTS) {
+      if (!a.active) continue;
+      let ax, ay;
+      if (scene === 'world' && a.mode === 'world') { ax = a.x; ay = a.y; }
+      else if (scene === 'interior' && a.mode === 'room' && a.room === String(curInterior.key)) { ax = a.rx; ay = a.ry; }
+      else continue;
+      const d = Math.hypot(px - ax, (py - ay) * 1.3);
+      if (d < (MEET.userSeated ? 80 : 40) && d < bd) { bd = d; best = a; }
+    }
+    return best && best.def;
+  }
+
   // ---------- movimiento ----------
   function canStand(nx, ny, grid, gw, gh) {
     const x0 = Math.floor((nx - 5) / T), x1 = Math.floor((nx + 4) / T);
@@ -1708,8 +1895,12 @@
     else if (fadeDir === -1) { fade -= dt / 0.18; if (fade <= 0) { fade = 0; fadeDir = 0; } }
     moving = false;
     if (fadeDir === 0) {
+      if (!auto && MEET.userGoing) startUserRoute();
+      const locked = !!auto || (MEET.userSeated && !MEET.userLeaving);
+      if (auto) stepAuto(dt);
       let vx = (keys.ArrowRight || keys.d ? 1 : 0) - (keys.ArrowLeft || keys.a ? 1 : 0);
       let vy = (keys.ArrowDown || keys.s ? 1 : 0) - (keys.ArrowUp || keys.w ? 1 : 0);
+      if (locked) { vx = 0; vy = 0; }
       if (vx || vy) {
         curView().free = false;
         if (Math.abs(vx) >= Math.abs(vy)) face = vx > 0 ? 'right' : 'left'; else face = vy > 0 ? 'down' : 'up';
@@ -1722,7 +1913,7 @@
       const can = (nx, ny) => (room ? canStandRoom(nx, ny, room) : canStand(nx, ny, grid, gw, gh)) && !agentBlocks(nx, ny);
       if (vx && can(px + vx * sp, py)) px += vx * sp;
       if (vy && can(px, py + vy * sp)) py += vy * sp;
-      moving = !!(vx || vy);
+      if (!auto) moving = !!(vx || vy);
       const tx = Math.floor(px / T), ty = Math.floor((py - 3) / T);
       if (scene === 'world') {
         for (const h of HOUSES) if (tx === h.door[0] && ty === h.door[1]) { enterBuilding(h.id, h.door); break; }
@@ -1761,7 +1952,7 @@
       },
     }));
     placedProps.forEach(p => objs.push({ y: p.base, f: () => drawPropAt(c, p, t) }));
-    AGENTS.forEach(a => { if (a.mode === 'world') objs.push({ y: a.y, f: () => { drawAgentAt(c, a, a.x, a.y, a.face, a.moving); if (a.near) drawAgentLabel(c, a, a.x, a.y); } }); });
+    AGENTS.forEach(a => { if (a.active && a.mode === 'world') objs.push({ y: a.y, f: () => { drawAgentAt(c, a, a.x, a.y, a.face, a.moving); if (a.near) drawAgentLabel(c, a, a.x, a.y); } }); });
     objs.push({ y: 15 * T, f: () => drawFountain(c, t) });
     objs.push({ y: py, f: () => drawPlayer(c, px, py, t, moving, face) });
     objs.sort((a, b) => a.y - b.y).forEach(o => { if (o.y > Tp - 6 && o.y < B + 40) o.f(); });
@@ -1798,6 +1989,7 @@
 
   // ---------- entradas: teclado, rueda, arrastre ----------
   window.addEventListener('keydown', e => {
+    if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     if (k.startsWith('Arrow') || k === ' ') e.preventDefault();
     if (k === '+' || k === '=') { zoomAt(1.25, cssW / 2, cssH / 2, false); return; }
@@ -1855,6 +2047,12 @@
   requestAnimationFrame(frame);
 
   // ayudas para revisar el pueblo (no afectan al juego)
+  window.VILLAGE = {
+    callMeeting, endMeeting, nearestAgent,
+    meeting: () => (MEET.on ? 'on' : 'off'),
+    meetingInfo: () => ({ on: MEET.on, userSeated: MEET.userSeated, userGoing: MEET.userGoing }),
+    where: () => scene === 'world' ? 'pueblo' : String(curInterior.key),
+  };
   window.__village = {
     HOUSES, HALL,
     state: () => ({ scene, px, py, interior: curInterior && curInterior.key }),
@@ -1862,7 +2060,7 @@
     setZoom: rel => { const v = curView(); v.rel = Math.max(minRel(), Math.min(MAXREL, rel)); clampCam(); },
     view: () => ({ ...curView(), scale: scaleOf(), dpr, cssW, cssH, minRel: minRel() }),
     frameMs: () => frameMs,
-    agents: () => AGENTS.map(a => ({ id: a.def.id, house: a.def.house, mode: a.mode, st: a.st, x: Math.round(a.x * 10) / 10, y: Math.round(a.y * 10) / 10, rx: Math.round(a.rx * 10) / 10, ry: Math.round(a.ry * 10) / 10, ready: a.sp.ready, near: a.near })),
+    agents: () => AGENTS.map(a => ({ id: a.def.id, house: a.def.house, mode: a.mode, st: a.st, x: Math.round(a.x * 10) / 10, y: Math.round(a.y * 10) / 10, rx: Math.round(a.rx * 10) / 10, ry: Math.round(a.ry * 10) / 10, ready: a.sp.ready, near: a.near, bt: Math.round(a.blockT * 10) / 10, goal: a.goal, p0: a.path[0], pl: a.path.length })),
     solidAt: (tx, ty) => solid[ty][tx],
     agentOk: (id, tx, ty) => { const a = AGENTS.find(q => q.def.id === id); return agOk(a, tx, ty); },
     seatsFree: () => AGENTS.map(a => { const d = ROOM_DEFS[String(a.def.house)], pl = agRoomPlan(a); return { id: a.def.id, points: pl.pts.length, last: pl.pts[pl.pts.length - 1].map(Math.round), pathFree: pl.pts.slice(0, -1).every(p => canStandRoom(p[0], p[1], d)) }; }),
