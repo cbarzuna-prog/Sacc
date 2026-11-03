@@ -54,6 +54,7 @@ function runClaude(person, prompt) {
     const args = ['-p', '--model', person.model, '--output-format', 'json', '--tools', 'Read,Grep,Glob', '--no-session-persistence'];
     // Para que cada personaje cargue lo mínimo (sin tus plugins ni habilidades, y sin conectores salvo los que se le dieron a propósito)
     args.push(...(CFG.claudeExtraArgs || []));
+    args.push('--add-dir', path.join(ROOT, 'team', 'shared')); // carpeta común: solo se puede leer (los personajes no tienen herramientas para escribir)
     const extra = accessTools(person);
     if (extra.length) args.push('--allowedTools', extra.join(',')); else args.push('--strict-mcp-config');
     const child = spawn(CFG.claudeCommand, args, { cwd: person.dir, env, shell: process.platform === 'win32', stdio: ['pipe', 'pipe', 'pipe'] });
@@ -73,12 +74,12 @@ function runClaude(person, prompt) {
   });
 }
 
-const histText = h => (Array.isArray(h) ? h.slice(-8) : []).map(m => `${m.from === 'user' ? 'Usuario' : 'Tú'}: ${clip(m.text, 600)}`).join('\n');
+const histText = h => (Array.isArray(h) ? h.filter(m => m && !m.sys && typeof m.text === 'string').slice(-8) : []).map(m => `${m.from === 'user' ? 'Usuario' : 'Tú'}: ${clip(m.text, 600)}`).join('\n');
 function personPrompt(p, message, history, extra) {
   return [
-    `Estás en el chat del pueblo "My AI Village". Eres ${p.name}, ${p.role}. Tus instrucciones completas están en CLAUDE.md de esta carpeta (ya las conoces).`,
+    `Estás en el chat del pueblo "My AI Village". Eres ${p.name}, ${p.role}. Tus instrucciones completas están en CLAUDE.md de esta carpeta (ya las conoces). Para tener contexto puedes leer la carpeta común ${path.join(ROOT, 'team', 'shared')} (EQUIPO.md, REGLAS.md y SOBRE_EL_USUARIO.md); solo se lee, nunca se escribe.`,
     `Tu memoria (notes.md):\n${clip(readSafe(path.join(p.dir, 'notes.md')), 3500) || '(vacía)'}`,
-    `Habla en español, corto y en tu personalidad (${p.personality}). Máximo unas 6 frases. No inventes datos. No hagas nada en el mundo real: solo conversas y propones.`,
+    `Solo conoces esta conversación, tu carpeta y tus notas: si el usuario se refiere a algo que no ves aquí, dilo y pregúntale en una frase; nunca inventes mensajes o conversaciones anteriores. Habla en español, corto y en tu personalidad (${p.personality}). Máximo unas 6 frases. No inventes datos. No hagas nada en el mundo real: solo conversas y propones.`,
     accessText(p),
     extra || '',
     history ? `Conversación reciente:\n${history}` : '',

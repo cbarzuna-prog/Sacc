@@ -149,7 +149,7 @@
     h.push({ from: 'user', text }); chat.busy.add(id); renderAll();
     if (id === 'mayor') logAdd('me', 'Tú → ' + people.mayor.name, text);
     try {
-      const j = await post('/api/chat', { agent: id, message: text, history: before });
+      const j = await post('/api/chat', { agent: id, message: text, history: before.filter(m => !m.sys) });
       h.push({ from: id, text: j.reply });
       if (id === 'mayor') {
         logAdd('', people.mayor.name, j.reply);
@@ -242,6 +242,7 @@
     if (handleIntent(t, meet.target)) return;
     if (meet.target === 'all') sendAll(t); else send(meet.target, t);
   });
+  $('chatClear').addEventListener('click', () => { if (chat.who) { chat.hist[chat.who] = []; renderAll(); save(); toast('Conversación nueva con ' + nameOf(chat.who) + '.'); } });
   document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => close(b.dataset.close)));
   document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
   $('szUp').addEventListener('click', () => { sz.av += 12; sz.nm += 2; applySize(); save(); });
