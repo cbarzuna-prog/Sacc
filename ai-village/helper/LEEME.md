@@ -46,3 +46,9 @@ El "advisor" (Fable 5.1) no se puede encender desde la línea de comandos; los d
 - Cada dato de internet debe traer **fuente y fecha**. Si no lo encuentran, deben decirlo.
 - Nunca deben poner datos privados tuyos en una búsqueda. Cassius tiene una regla extra: nada de contenido de tus correos en búsquedas.
 - Gasta más plan que una charla normal, y lo que buscan sale de tu computadora hacia las páginas y hacia Anthropic.
+
+## Pendientes y recordatorios
+- Si a un director le falta algo que solo tú puedes dar (un dato, un acceso, una decisión, un archivo), lo anota en su respuesta y el programita lo guarda en `helper/data/todo.json` (no se sube a GitHub). Los personajes no escriben archivos.
+- Eleanor ve la lista (también en `team/chief/pendientes.md`) y puedes pedirle "¿qué pendientes tengo?".
+- En el juego: pestaña **Pendientes** (botón 📝), con Hecho / Descartar / Hablar con…, y un "!" dorado sobre quien te necesita.
+- **Recordatorios (corren solos mientras la página está abierta):** cada 5 minutos, si hay pendientes, Eleanor camina hasta ti y lo anota en el Registro; cada 4 minutos un director con un pendiente te busca. Se pueden apagar o posponer 1 h en la pestaña Pendientes. No llaman a Claude, ni a ninguna API: son solo el juego en tu navegador. Si cierras la página, no hay recordatorios.

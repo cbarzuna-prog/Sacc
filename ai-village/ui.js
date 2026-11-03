@@ -57,6 +57,7 @@
     $('btnChief').classList.toggle('on', isOpen('chatbox') && chat.who === 'mayor');
     $('btnLog').classList.toggle('on', isOpen('logbox') && tab === 'registro');
     $('btnTalk').classList.toggle('on', isOpen('logbox') && tab === 'charlas');
+    $('btnTodo').classList.toggle('on', isOpen('logbox') && tab === 'pendientes');
   }
   function applySize() {
     sz.av = Math.max(32, Math.min(140, sz.av)); sz.nm = Math.max(10, Math.min(24, sz.nm));
@@ -65,10 +66,11 @@
   function setTab(name) {
     tab = name;
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
-    ['reunion', 'registro', 'charlas'].forEach(n => $('pane' + n[0].toUpperCase() + n.slice(1)).classList.toggle('on', n === name));
+    ['reunion', 'registro', 'charlas', 'pendientes'].forEach(n => $('pane' + n[0].toUpperCase() + n.slice(1)).classList.toggle('on', n === name));
     if (name === 'reunion') { renderRoster(); renderMeet(); setTimeout(() => $('meetin').focus(), 30); }
     if (name === 'registro') renderLog();
     if (name === 'charlas') { renderTalk(); renderTalkBar(); }
+    if (name === 'pendientes') { refreshTodo(); renderTodo(); }
     syncButtons();
   }
   function openPanel(name) { open('logbox'); setTab(name); }
@@ -128,9 +130,62 @@
   function openChat(id) {
     if (!people[id]) return;
     chat.who = id; $('chatName').textContent = people[id].name; $('chatRole').textContent = people[id].role;
+    todo.items.filter(t => t.who === id && !todo.asked.has(t.id)).forEach(t => { todo.asked.add(t.id); hist(id).push({ from: id, text: 'Jefe, para seguir con mi trabajo me falta: ' + t.what + ' (' + t.why + ').' }); });
     open('chatbox'); renderChat(); syncButtons();
     if (id === 'mayor') openPanel('registro');
     setTimeout(() => $('chatin').focus(), 30);
+  }
+
+
+  // ---------- pendientes: lo que los directores necesitan de ti ----------
+  const todo = { items: [], remind: true, snoozeUntil: 0, lastRemind: 0, lastSeek: 0, asked: new Set(), sought: {} };
+  const REMIND_EVERY = 5 * 60e3, SEEK_EVERY = 4 * 60e3;
+  Object.assign(todo, (() => { const s = load('village.remind', {}); return { remind: s.remind !== false, snoozeUntil: s.snoozeUntil || 0 }; })());
+  const saveRemind = () => { try { localStorage.setItem('village.remind', JSON.stringify({ remind: todo.remind, snoozeUntil: todo.snoozeUntil })); } catch { /* idem */ } };
+  function updateBadge() {
+    const n = todo.items.length;
+    $('btnTodo').textContent = '📝 Pendientes' + (n ? ' (' + n + ')' : '');
+    document.title = (n ? '(' + n + ') ' : '') + 'My AI Village';
+    V.setNeeds([...new Set(todo.items.map(t => t.who))]);
+    $('remindToggle').textContent = 'Recordatorios: ' + (todo.remind ? 'sí' : 'no');
+  }
+  function renderTodo() {
+    updateBadge();
+    const box = $('todolist'); box.textContent = '';
+    if (!todo.items.length) box.appendChild(el('sys', '', helper ? 'No hay nada pendiente contigo. Cuando a un director le falte algo que solo tú puedes dar, aparecerá aquí.' : 'Sin programita: no puedo guardar pendientes.'));
+    todo.items.forEach(t => {
+      const d = document.createElement('div'); d.className = 'todo ' + t.urgency;
+      const s = document.createElement('small'); s.textContent = t.name + ' · prioridad ' + t.urgency; d.appendChild(s);
+      d.appendChild(document.createTextNode(t.what));
+      const w = document.createElement('div'); w.className = 'why'; w.textContent = t.why; d.appendChild(w);
+      const a = document.createElement('div'); a.className = 'acts';
+      [['Hecho', 'done'], ['Descartar', 'dismiss']].forEach(([label, act]) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.addEventListener('click', () => todoAct({ action: act, id: t.id })); a.appendChild(b); });
+      if (t.who !== 'user' && people[t.who]) { const b = document.createElement('button'); b.type = 'button'; b.textContent = 'Hablar con ' + short(t.who); b.addEventListener('click', () => openChat(t.who)); a.appendChild(b); }
+      d.appendChild(a); box.appendChild(d);
+    });
+  }
+  async function todoAct(body) { try { const j = await post('/api/todo', body); todo.items = j.items; } catch (e) { toast(errMsg(e)); } renderTodo(); }
+  async function refreshTodo() { if (!helper) return; try { const j = await post('/api/todo', { action: 'list' }); todo.items = j.items; } catch { /* sin conexión */ } renderTodo(); }
+  function afterChat(j) { // un director anotó algo que le falta
+    if (!j || !j.needs || !j.needs.length) return;
+    j.needs.forEach(n => { todo.asked.add(n.id); logAdd('task', '📝 ' + n.name + ' necesita algo de ti', n.what + ' — ' + n.why); });
+    toast('📝 ' + j.needs.map(n => n.name.split(' ')[0]).join(' y ') + ': anotó ' + (j.needs.length > 1 ? 'pendientes' : 'un pendiente') + ' para ti (pestaña Pendientes).');
+    refreshTodo();
+  }
+  function tick() { // recordatorios y directores que te buscan: solo en esta página, sin gastar nada de tu plan
+    if (!helper || V.meeting() === 'on' || !todo.items.length || !todo.remind) return;
+    const now = Date.now(); if (now < todo.snoozeUntil) return;
+    if (now - todo.lastRemind > REMIND_EVERY) {
+      todo.lastRemind = now;
+      const txt = 'Jefe, tienes ' + todo.items.length + ' pendiente' + (todo.items.length > 1 ? 's' : '') + ': ' + todo.items.slice(0, 4).map((t, i) => (i + 1) + ') ' + t.name.replace(/^Profesora /, '').replace(/"/g, '').split(' ')[0] + ': ' + t.what).join('; ') + (todo.items.length > 4 ? '…' : '') + '.';
+      V.summon('mayor', false, 90);
+      logAdd('task', '🔔 ' + people.mayor.name + ' te recuerda', txt); toast('🔔 ' + txt.slice(0, 120));
+    } else if (now - todo.lastSeek > SEEK_EVERY) {
+      const cand = todo.items.filter(t => t.who !== 'user' && t.who !== 'mayor' && people[t.who]).sort((a, b) => (todo.sought[a.who] || 0) - (todo.sought[b.who] || 0))[0];
+      if (!cand) return;
+      todo.lastSeek = now; todo.sought[cand.who] = now;
+      if (V.summon(cand.who, false, 90) === 'ok') toast('❗ ' + short(cand.who) + ' te busca: necesita algo de ti.');
+    }
   }
 
   // ---------- hablar con el programita ----------
@@ -149,8 +204,8 @@
     h.push({ from: 'user', text }); chat.busy.add(id); renderAll();
     if (id === 'mayor') logAdd('me', 'Tú → ' + people.mayor.name, text);
     try {
-      const j = await post('/api/chat', { agent: id, message: text, history: before.filter(m => !m.sys) });
-      h.push({ from: id, text: j.reply });
+      const j = await post('/api/chat', { agent: id, message: text, history: before.filter(m => !m.sys).slice(-30) });
+      h.push({ from: id, text: j.reply }); afterChat(j);
       if (id === 'mayor') {
         logAdd('', people.mayor.name, j.reply);
         (j.delegations || []).forEach(d => {
@@ -175,7 +230,7 @@
       while (i < ids.length) {
         const id = ids[i++], own = hist(id), before = own.slice();
         own.push({ from: 'user', text: '(a todos en la reunión) ' + text });
-        try { const j = await post('/api/chat', { agent: id, message: text, history: before, plain: true }); own.push({ from: id, text: j.reply }); h.push({ from: id, text: j.reply }); }
+        try { const j = await post('/api/chat', { agent: id, message: text, history: before, plain: true }); own.push({ from: id, text: j.reply }); h.push({ from: id, text: j.reply }); afterChat(j); }
         catch (e) { h.push({ from: id, sys: true, text: nameOf(id) + ': ' + errMsg(e) }); if (e.message === 'sin conexión') i = ids.length; }
         renderAll();
       }
@@ -251,6 +306,10 @@
   const toggleTab = name => { if (isOpen('logbox') && tab === name) close('logbox'); else openPanel(name); syncButtons(); };
   $('btnLog').addEventListener('click', () => toggleTab('registro'));
   $('btnTalk').addEventListener('click', () => toggleTab('charlas'));
+  $('btnTodo').addEventListener('click', () => toggleTab('pendientes'));
+  $('remindToggle').addEventListener('click', () => { todo.remind = !todo.remind; saveRemind(); updateBadge(); });
+  $('snooze').addEventListener('click', () => { todo.snoozeUntil = Date.now() + 3600e3; saveRemind(); toast('Eleanor te vuelve a recordar en 1 hora.'); });
+  $('todoform').addEventListener('submit', e => { e.preventDefault(); const t = $('todoin').value.trim(); if (!t) return; $('todoin').value = ''; todoAct({ action: 'add', what: t }); });
   $('btnMeet').addEventListener('click', () => { if (V.meeting() === 'on') V.endMeeting(); else V.callMeeting(); });
   $('talkToggle').addEventListener('click', async () => {
     try { helper.smallTalk = await post('/api/settings', { smallTalk: !(helper.smallTalk && helper.smallTalk.enabled) }); V.setEncounters(helper.smallTalk.enabled); } catch (e) { toast(errMsg(e)); }
@@ -320,10 +379,11 @@
     }).catch(() => { /* si el modelo local falla, simplemente no hay charla */ });
   };
 
+  window.__villageUI = { todo, tick }; // para revisar el juego
   applySize();
   fetch('/__helper.json').then(r => r.json()).then(j => {
     helper = j; $('conn').textContent = j.fake ? 'Programita conectado (modo prueba)' : 'Programita conectado';
-    V.setEncounters(!!(j.smallTalk && j.smallTalk.enabled)); renderTalkBar();
+    V.setEncounters(!!(j.smallTalk && j.smallTalk.enabled)); renderTalkBar(); refreshTodo(); setInterval(refreshTodo, 60e3); setInterval(tick, 20e3);
   }).catch(() => { $('conn').textContent = 'Sin programita: el chat no contestará'; renderTalkBar(); });
   setTab('registro'); close('logbox');
 })();

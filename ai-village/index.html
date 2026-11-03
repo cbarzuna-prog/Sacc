@@ -16,11 +16,12 @@
       <button id="btnChief" type="button" title="Doble toque de M">💬 Jefa de gabinete</button>
       <button id="btnLog" type="button">📜 Registro</button>
       <button id="btnTalk" type="button" title="Tecla C">🗨️ Charlas</button>
+      <button id="btnTodo" type="button" title="Lo que los directores necesitan de ti">📝 Pendientes</button>
       <span id="conn" title="Estado del programita"></span>
     </div>
     <aside id="logbox" class="box hidden">
       <header>
-        <div class="tabs"><button type="button" class="tab" data-tab="reunion" id="tabReunion">Reunión</button><button type="button" class="tab" data-tab="registro">Registro</button><button type="button" class="tab" data-tab="charlas">Charlas</button></div>
+        <div class="tabs"><button type="button" class="tab" data-tab="reunion" id="tabReunion">Reunión</button><button type="button" class="tab" data-tab="registro">Registro</button><button type="button" class="tab" data-tab="charlas">Charlas</button><button type="button" class="tab" data-tab="pendientes">Pendientes</button></div>
         <div class="sizer" title="Tamaño de retratos y nombres"><button type="button" id="szDown">A−</button><button type="button" id="szUp">A+</button></div>
         <button class="x" data-close="logbox" type="button" aria-label="Cerrar">×</button>
       </header>
@@ -31,6 +32,11 @@
         <form id="meetform"><input id="meetin" type="text" autocomplete="off" maxlength="1000" placeholder="Habla con todos o con quien elijas"><button type="submit">Enviar</button></form>
       </section>
       <section class="pane" id="paneRegistro"><div class="msgs" id="logmsgs"></div></section>
+      <section class="pane" id="panePendientes">
+        <div id="todobar"><button type="button" id="remindToggle">Recordatorios: sí</button><button type="button" id="snooze">Posponer 1 h</button></div>
+        <div class="msgs" id="todolist"></div>
+        <form id="todoform"><input id="todoin" type="text" autocomplete="off" maxlength="200" placeholder="Anota algo tú (opcional)"><button type="submit">Añadir</button></form>
+      </section>
       <section class="pane" id="paneCharlas">
         <div id="talkbar"><span id="talkstatus"></span><button type="button" id="talkToggle">Encender</button></div>
         <div class="msgs" id="talkmsgs"></div>

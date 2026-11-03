@@ -96,3 +96,6 @@ Decisiones del usuario: asientos con la mitad de arriba del sprite de perfil (op
 - Panel izquierdo con pestañas Reunión / Registro / Charlas (tecla C), tamaño ajustable (arrastrar esquina, A− / A+). En la reunión: lista con retratos y "Todos" (cada uno contesta por separado, 3 a la vez).
 - Charlas entre vecinos: modelo local (Ollama), apagado por defecto, solo si hay algo real que decir; no gasta el plan.
 - Acceso de Cassius (Bandeja y email): Gmail + Google Calendar, solo lectura, vía conectores. Supuesto: el mensaje del usuario traía los corchetes sin llenar ([director], [inbox y calendario], [Gmail]); se interpretó como el director de Bandeja y email. Sin probar con Claude real.
+
+### Pendientes y recordatorios
+- Los directores avisan lo que les falta con [[NECESITO: …]]; el programita guarda la lista; pestaña Pendientes; "!" sobre quien te necesita; Eleanor te recuerda cada 5 min y un director te busca cada 4 min (solo con la página abierta, sin gastar plan; se pueden apagar o posponer).

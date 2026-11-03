@@ -763,6 +763,7 @@
     c.drawImage(img, col * AG_CW, row * AG_CH, AG_CW, AG_CH, x - AG_CW / 2 * k, y - AG_BASE * k, AG_CW * k, AG_CH * k);
     if (a.phoneUntil > time) drawPhone(c, a, x, y);
     if (a.talkUntil > time) drawTalkBubble(c, a, x, y);
+    else if (a.needs && !a.summoned) drawNeedBubble(c, a, x, y);
   }
   function drawAgentRoom(c, a) { // dentro de su habitación; sentado, las piernas quedan tapadas por el mueble
     const s = agSeat(a), clipY = s.clip * ROOMK, sx = s.x * ROOMK;
@@ -1807,16 +1808,17 @@
   }
   function agSummonCheck(a) { // sigue esperándote; si te moviste lejos, camina de nuevo
     if (!a.summoned) return;
+    if (a.summonUntil && time > a.summonUntil && scene === 'world' && Math.hypot(px - a.x, py - a.y) < 60) { sendBack(a.def.id); return; } // ya te habló: vuelve a lo suyo
     if (scene === 'world' && Math.hypot(px - a.x, py - a.y) > 52) { agSummonWalk(a); return; }
     agWait(a, 1.5, () => agSummonCheck(a));
   }
-  function summonAgent(id, viaChief) {
+  function summonAgent(id, viaChief, ttl) {
     const a = AGENTS.find(q => q.def.id === id && q.active);
     if (!a) return 'ausente';
     if (MEET.on) return 'reunion';
     const chief = AGENTS.find(q => q.def.chief);
     if (viaChief && chief && chief !== a) { chief.phoneUntil = time + 2.8; chief.moving = false; }
-    a.summoned = true; a.postMeeting = false;
+    a.summoned = true; a.postMeeting = false; a.summonUntil = ttl ? time + ttl : 0;
     const start = () => {
       if (!a.summoned || MEET.on) return;
       if (a.mode === 'room') { a.afterLeave = agSummonWalk; if (a.st === 'seated' || a.st === 'meeting') agLeaveSeat(a); }
@@ -1862,6 +1864,12 @@
       if (window.VILLAGE.onEncounter) window.VILLAGE.onEncounter(a.def, b.def);
       return;
     }
+  }
+  function drawNeedBubble(c, a, x, y) { // "!" sobre quien necesita algo de ti
+    const bx = x, by = y - AG_BASE * AG_UPP - 3.5, k = 0.85 + 0.15 * Math.sin(time * 5);
+    c.fillStyle = '#d8b04a'; c.beginPath(); c.arc(bx, by, 3.1 * k, 0, 6.2832); c.fill();
+    c.strokeStyle = '#3a2412'; c.lineWidth = 0.35; c.stroke();
+    R(c, '#3a2412', bx - 0.4, by - 1.7, 0.8, 2.1); R(c, '#3a2412', bx - 0.4, by + 0.8, 0.8, 0.8);
   }
   function drawTalkBubble(c, a, x, y) { // globito con puntos mientras conversan
     const bx = x, by = y - AG_BASE * AG_UPP - 3.5;
@@ -2166,6 +2174,7 @@
   // ayudas para revisar el pueblo (no afectan al juego)
   window.VILLAGE = {
     callMeeting, endMeeting, nearestAgent, summon: summonAgent, sendBack,
+    setNeeds: ids => AGENTS.forEach(a => { a.needs = ids.includes(a.def.id); }),
     setEncounters: on => { ENC.on = !!on; ENC.next = time + 20; },
     roster: () => AGENTS.filter(a => a.active).map(a => a.def),
     summoned: () => AGENTS.filter(q => q.summoned).map(q => q.def.id),

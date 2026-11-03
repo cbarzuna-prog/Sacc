@@ -47,6 +47,40 @@ const accessText = p => {
   return [webText(p), conn].filter(Boolean).join(' ');
 };
 
+
+// ---- pendientes: lo que a los directores les falta y solo tú puedes dar ----
+// Los personajes no pueden escribir archivos: cuando algo les falta, lo anotan en su respuesta como [[NECESITO: qué | por qué | urgencia]]
+// y el programita lo guarda aquí. Eleanor ve la lista y te la recuerda.
+const DATA_DIR = path.join(__dirname, 'data'), TODO_FILE = path.join(DATA_DIR, 'todo.json');
+let TODO = [];
+try { TODO = JSON.parse(fs.readFileSync(TODO_FILE, 'utf8')); } catch { TODO = []; }
+const normTxt = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+function saveTodo() {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(TODO_FILE, JSON.stringify(TODO, null, 2));
+    const open = TODO.filter(t => t.status === 'open');
+    const md = '# Pendientes del usuario (los mantiene el programita)\n\n' + (open.length ? open.map((t, i) => `${i + 1}. [${t.urgency}] **${t.name}** necesita: ${t.what} — ${t.why}`).join('\n') : 'Nada pendiente.') + '\n';
+    fs.writeFileSync(path.join(ROOT, 'team', 'chief', 'pendientes.md'), md);
+  } catch { /* si no se puede guardar, la lista sigue en memoria */ }
+}
+const openTodo = () => TODO.filter(t => t.status === 'open');
+function addNeeds(p, text) { // saca los [[NECESITO: ...]] de la respuesta, los guarda y devuelve el texto limpio
+  const found = [];
+  const clean = String(text || '').replace(/\[\[\s*NECESITO\s*:\s*([^\]|]+?)\s*(?:\|\s*([^\]|]*?)\s*)?(?:\|\s*(alta|media|baja)\s*)?\]\]/gi, (m, what, why, urg) => {
+    const key = normTxt(what);
+    if (key && !TODO.some(t => t.status === 'open' && t.who === p.id && normTxt(t.what) === key)) {
+      const it = { id: crypto.randomBytes(4).toString('hex'), who: p.id, name: p.name, what: clip(what, 200), why: clip(why || 'para poder seguir con su trabajo', 200), urgency: (urg || 'media').toLowerCase(), created: Date.now(), status: 'open' };
+      TODO.push(it); found.push(it);
+    }
+    return '';
+  }).replace(/\n{3,}/g, '\n\n').trim();
+  if (found.length) saveTodo();
+  return { clean, found };
+}
+const needsText = p => 'Si para hacer bien tu trabajo te falta algo que SOLO el usuario puede darte (un dato, un acceso, una decisión, un archivo), responde igual con lo que sí puedes y al FINAL agrega una línea por cada cosa: [[NECESITO: qué te falta | por qué lo necesitas | alta, media o baja]]. No pidas lo que puedas averiguar tú. No repitas algo que ya está en tus pendientes.' +
+  (openTodo().filter(t => t.who === p.id).length ? ` Ya tienes estos pendientes abiertos con el usuario: ${openTodo().filter(t => t.who === p.id).map(t => t.what).join('; ')}.` : '') +
+  (p.isChief && openTodo().length ? ` Lista de pendientes abiertos del usuario (de todos los directores): ${openTodo().map(t => `${t.name}: ${t.what}`).join('; ')}.` : '');
+
 const now = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
 const clip = (t, n) => { t = String(t || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n - 1) + '…' : t; };
 const readSafe = f => { try { return fs.readFileSync(f, 'utf8'); } catch { return ''; } };
@@ -81,13 +115,23 @@ function runClaude(person, prompt) {
   });
 }
 
-const histText = h => (Array.isArray(h) ? h.filter(m => m && !m.sys && typeof m.text === 'string').slice(-8) : []).map(m => `${m.from === 'user' ? 'Usuario' : 'Tú'}: ${clip(m.text, 600)}`).join('\n');
+const histText = h => { // lo más reciente completo, hasta un presupuesto de caracteres (así "sí" siempre se entiende)
+  const msgs = (Array.isArray(h) ? h : []).filter(m => m && !m.sys && typeof m.text === 'string');
+  const out = []; let total = 0;
+  for (let i = msgs.length - 1; i >= 0 && out.length < 30; i--) {
+    const m = msgs[i], line = `${m.from === 'user' ? 'Usuario' : 'Tú'}: ${m.text.length > 6000 ? m.text.slice(0, 6000) + '…' : m.text}`;
+    if (total + line.length > 16000 && out.length) break;
+    out.unshift(line); total += line.length;
+  }
+  return out.join('\n');
+};
 function personPrompt(p, message, history, extra) {
   return [
     `Estás en el chat del pueblo "My AI Village". Eres ${p.name}, ${p.role}. Tus instrucciones completas están en CLAUDE.md de esta carpeta (ya las conoces). Para tener contexto puedes leer la carpeta común ${path.join(ROOT, 'team', 'shared')} (EQUIPO.md, REGLAS.md y SOBRE_EL_USUARIO.md); solo se lee, nunca se escribe.`,
     `Tu memoria (notes.md):\n${clip(readSafe(path.join(p.dir, 'notes.md')), 3500) || '(vacía)'}`,
     `Solo conoces esta conversación, tu carpeta y tus notas: si el usuario se refiere a algo que no ves aquí, dilo y pregúntale en una frase; nunca inventes mensajes o conversaciones anteriores. Habla en español, corto y en tu personalidad (${p.personality}). Máximo unas 6 frases. No inventes datos. No hagas nada en el mundo real: solo conversas y propones.`,
     accessText(p),
+    needsText(p),
     extra || '',
     history ? `Conversación reciente:\n${history}` : '',
     `Mensaje del usuario (tu jefe, el Chief Human Officer):\n${message}`,
@@ -101,7 +145,7 @@ function appendNote(p, line) {
 // ---- respuestas de prueba (sin gastar nada) ----
 const KEYWORDS = { banker: /dinero|banco|gasto|presupuesto|cuenta/i, trader: /trading|mercado|acci[oó]n|bolsa/i, scholar: /investig|estudio|aprender|research/i, postman: /correo|email|bandeja|inbox/i,
   reporter: /noticia|ia\b|news/i, adman: /anuncio|meta|ads|campa/i, promoter: /marketing inmobiliario|promo/i, broker: /inmobiliaria|terreno|casa|propiedad/i, driver: /outreach|contacto|entrega/i };
-function fakeReply(p, message) { return `(modo prueba) Soy ${p.name}. Me dijiste: «${clip(message, 80)}». Con tu plan real te respondería con mi personalidad y mis notas.`; }
+function fakeReply(p, message) { return `(modo prueba) Soy ${p.name}. Me dijiste: «${clip(message, 80)}». Con tu plan real te respondería con mi personalidad y mis notas.` + (/pendiente de prueba/i.test(message) ? ` [[NECESITO: un dato de prueba de ${p.role} | es una prueba del modo falso | alta]]` : ''); }
 
 async function talk(p, message, history, plain) {
   if (FAKE) return { reply: fakeReply(p, message), delegations: [] };
@@ -125,7 +169,8 @@ async function chat(agentId, message, history, plain) {
   const p = PEOPLE[agentId];
   if (!p) throw new Error('no conozco a ese personaje');
   const out = await talk(p, message, history, plain);
-  const result = { agent: p.id, name: p.name, reply: out.reply, delegations: [] };
+  const n0 = addNeeds(p, out.reply); out.reply = n0.clean;
+  const result = { agent: p.id, name: p.name, reply: out.reply, delegations: [], needs: n0.found };
   if (p.isChief && !plain) {
     const dels = (FAKE && !out.delegations.length ? DIRS.filter(d => !d.chief && KEYWORDS[d.id] && KEYWORDS[d.id].test(message)).map(d => ({ to: d.id, task: message })) : out.delegations)
       .filter(d => d && PEOPLE[d.to] && !PEOPLE[d.to].isChief).slice(0, CFG.maxDelegations);
@@ -139,6 +184,7 @@ async function chat(agentId, message, history, plain) {
         else r = await runClaude(q, personPrompt(q, `La jefa de gabinete (${p.name}) te pasa esta tarea del usuario: ${d.task}\nResponde con lo que harás o propones, en pocas frases.`, ''));
         appendNote(q, `la jefa de gabinete me pasó «${clip(d.task, 140)}»; respondí «${clip(r, 140)}»`);
       } catch (e) { r = '(no pude responder: ' + e.message + ')'; }
+      const n1 = addNeeds(q, r); r = n1.clean; result.needs.push(...n1.found);
       result.delegations.push({ to: q.id, name: q.name, role: q.role, task: d.task, reply: r });
     }
   }
@@ -202,16 +248,23 @@ http.createServer((req, res) => {
   if (!okHost(req.headers.host)) return send(res, 403, { error: 'host no permitido' });
   const url = new URL(req.url, `http://${req.headers.host}`);
   if (req.method === 'GET' && url.pathname === '/__helper.json') { probeLocal().then(() => send(res, 200, { token: TOKEN, fake: FAKE, people: Object.keys(PEOPLE), smallTalk: stInfo(), access: Object.fromEntries(Object.entries(CFG.access || {}).map(([k, v]) => [k, v.connectors])) })); return; }
-  if (req.method === 'POST' && (url.pathname === '/api/chat' || url.pathname === '/api/smalltalk' || url.pathname === '/api/settings')) {
+  if (req.method === 'POST' && (url.pathname === '/api/chat' || url.pathname === '/api/smalltalk' || url.pathname === '/api/settings' || url.pathname === '/api/todo')) {
     const origin = req.headers.origin;
     if (origin && !okHost(origin.replace(/^https?:\/\//, ''))) return send(res, 403, { error: 'origen no permitido' });
     if (req.headers['x-village-token'] !== TOKEN) return send(res, 403, { error: 'token incorrecto' });
     let body = '';
-    req.on('data', d => { body += d; if (body.length > 20000) req.destroy(); });
+    req.on('data', d => { body += d; if (body.length > 200000) req.destroy(); });
     req.on('end', async () => {
       try {
         const j = JSON.parse(body);
         if (url.pathname === '/api/settings') { if (typeof j.smallTalk === 'boolean') { ST.enabled = j.smallTalk; await probeLocal(); } return send(res, 200, stInfo()); }
+        if (url.pathname === '/api/todo') {
+          const it = TODO.find(t => t.id === j.id);
+          if (j.action === 'done' && it) { it.status = 'done'; it.closed = Date.now(); saveTodo(); }
+          if (j.action === 'dismiss' && it) { it.status = 'dismissed'; it.closed = Date.now(); saveTodo(); }
+          if (j.action === 'add' && typeof j.what === 'string' && j.what.trim()) { TODO.push({ id: crypto.randomBytes(4).toString('hex'), who: 'user', name: 'Tú', what: clip(j.what, 200), why: 'lo anotaste tú', urgency: 'media', created: Date.now(), status: 'open' }); saveTodo(); }
+          return send(res, 200, { items: openTodo() });
+        }
         if (url.pathname === '/api/smalltalk') return send(res, 200, await smallTalk(String(j.a), String(j.b)));
         if (typeof j.message !== 'string' || !j.message.trim()) return send(res, 400, { error: 'mensaje vacío' });
         send(res, 200, await chat(String(j.agent), j.message.slice(0, 4000), j.history, !!j.plain));
