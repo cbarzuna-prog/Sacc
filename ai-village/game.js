@@ -273,14 +273,13 @@
     bolsa: { file: 'sprites/bolsa.png', w: 1248, h: 1093, width: 86, name: 'BOLSA', plate: [381, 564, 487, 87], tcol: '#7be08a', lights: [[439, 773], [814, 773]] },
   };
   const SPRITE_FOR = { 1: 'banco', 2: 'bolsa', 3: 'archivo', 4: 'correo', 5: 'gaceta', 6: 'metaads', 7: 'promotora', 8: 'tierras', 9: 'express', 10: 'mansion' };
-  for (const key in SPRITES) {
-    const def = SPRITES[key];
+  function loadSpriteFile(def) {
     def.ready = false;
     const img = new Image();
     img.onload = () => { // versiones reducidas (1/2, 1/4...) para que se vea nítido a cualquier zoom
       def.levels = [img];
       let cur = img;
-      while (cur.width / 2 >= 160) {
+      while (cur.width / 2 >= 48) {
         const c2c = document.createElement('canvas');
         c2c.width = Math.round(cur.width / 2); c2c.height = Math.round(cur.height / 2);
         const c2 = c2c.getContext('2d'); c2.imageSmoothingQuality = 'high'; c2.drawImage(cur, 0, 0, c2c.width, c2c.height);
@@ -290,6 +289,7 @@
     };
     img.src = def.file;
   }
+  for (const key in SPRITES) loadSpriteFile(SPRITES[key]);
   function spritePlace(def, fx, fy, fw, fh) {
     const s = def.width / def.w;
     return { x: fx + fw / 2 - def.width / 2, y: fy + fh + 3 - def.h * s, w: def.width, h: def.h * s, s };
@@ -325,6 +325,88 @@
     const def = SPRITES.hall;
     if (def.ready) { const p = spritePlace(def, HALL.x * T, HALL.y * T, HALL.w * T, HALL.h * T); return [p.x + def.pole[0] * p.s, p.y + def.pole[1] * p.s]; }
     return [HALL.x * T + 25, HALL.y * T + 8];
+  }
+
+  // ---------- objetos pequeños con arte de Canva (bancas, faroles, barriles, cercas...) ----------
+  // Tamaño del archivo recortado (píxeles) y tamaño en el pueblo: ['w', ancho] o ['h', alto] en unidades (1 cuadro = 16).
+  const PROP_PX = {
+    barrel1: [172, 227], barrel2: [171, 227], barrel3: [229, 215], barrel4: [170, 227],
+    bed1: [260, 158], bed2: [261, 158], bed3: [261, 174], bed4: [261, 157],
+    bench1: [378, 276], bench2: [373, 276], bench3: [373, 265],
+    bush1: [199, 173], bush2: [205, 179], bush3: [145, 212], bush4: [232, 133],
+    crate1: [172, 181], crate2: [197, 279], crate3: [208, 200], crate4: [313, 225],
+    fence_corner: [267, 185], fence_gate: [304, 180], fence_long: [322, 152], fence_post: [61, 177], fence_short: [192, 154],
+    fountain: [522, 433], lamp1: [95, 460], lamp2: [101, 462], lamp3: [93, 460], vending: [248, 398],
+  };
+  const PROP_SIZE = {
+    barrel1: ['h', 15], barrel2: ['h', 15], barrel3: ['h', 12], barrel4: ['h', 15],
+    bed1: ['w', 26], bed2: ['w', 26], bed3: ['w', 26], bed4: ['w', 26],
+    bench1: ['w', 26], bench2: ['w', 26], bench3: ['w', 26],
+    bush1: ['w', 17], bush2: ['w', 17], bush3: ['w', 12], bush4: ['w', 20],
+    crate1: ['h', 14], crate2: ['h', 22], crate3: ['h', 14], crate4: ['h', 16],
+    fence_corner: ['h', 15], fence_gate: ['h', 14], fence_long: ['h', 13], fence_post: ['h', 15], fence_short: ['h', 13],
+    fountain: ['w', 44], lamp1: ['h', 40], lamp2: ['h', 40], lamp3: ['h', 40], vending: ['h', 28],
+  };
+  const PROPS = {};
+  for (const n in PROP_PX) {
+    const [pw, ph] = PROP_PX[n], [mode, v] = PROP_SIZE[n];
+    PROPS[n] = { file: `props/${n}.png`, uw: mode === 'w' ? v : pw * v / ph, uh: mode === 'w' ? ph * v / pw : v };
+    loadSpriteFile(PROPS[n]);
+  }
+  // [objeto, columna, fila de la base, cuadros de ancho]. Solo se colocan si el sitio está libre:
+  // nunca sobre caminos, plaza de entrada, jardines frente a las puertas ni encima de otros objetos.
+  const PROP_PLACE = [
+    ['bench1', 17, 11, 2], ['bench2', 21, 11, 2], ['bench3', 14, 14, 2], ['bench1', 24, 14, 2],
+    ['lamp1', 14, 10, 1], ['lamp2', 25, 10, 1], ['lamp3', 14, 17, 1], ['lamp1', 25, 17, 1],
+    ['lamp2', 18, 19, 1], ['lamp3', 21, 19, 1], ['lamp1', 18, 23, 1],
+    ['vending', 26, 19, 1],
+    ['fence_long', 10, 12, 2], ['fence_long', 12, 12, 2], ['fence_long', 10, 17, 2], ['fence_gate', 12, 17, 2],
+    ['bed1', 10, 14, 2], ['bed2', 12, 14, 2], ['bush1', 10, 15, 1], ['bush2', 13, 15, 1],
+    ['fence_long', 26, 12, 2], ['fence_long', 28, 12, 2], ['fence_long', 26, 17, 2], ['fence_gate', 28, 17, 2],
+    ['bed3', 26, 14, 2], ['bed4', 28, 14, 2], ['bush2', 26, 15, 1], ['bush1', 29, 15, 1],
+    ['barrel1', 10, 21, 1], ['barrel4', 10, 22, 1], ['crate1', 11, 21, 1], ['barrel2', 17, 22, 1],
+    ['barrel1', 29, 21, 1], ['crate3', 29, 22, 1], ['crate4', 29, 8, 2],
+    ['bush3', 15, 4, 1], ['bush1', 24, 4, 1], ['bush2', 15, 5, 1], ['bush3', 24, 5, 1],
+    ['bush1', 2, 9, 1], ['bush2', 2, 15, 1], ['bush3', 2, 22, 1], ['bush1', 37, 9, 1], ['bush2', 37, 15, 1], ['bush3', 37, 22, 1],
+    ['bed1', 0, 11, 2], ['bed2', 37, 12, 2], ['bush4', 4, 27, 2], ['bush4', 33, 27, 2],
+  ];
+  const placedProps = [];
+  {
+    const occ = new Set();
+    for (const [name, tx, ty, fw] of PROP_PLACE) {
+      let ok = ty >= 0 && ty < MH && tx >= 0 && tx + fw <= MW;
+      for (let x = tx; ok && x < tx + fw; x++) if (kind[ty][x] === 1 || solid[ty][x] || inYard(x, ty) || occ.has(x + ',' + ty)) ok = false;
+      if (!ok) continue;
+      for (let x = tx; x < tx + fw; x++) { occ.add(x + ',' + ty); solid[ty][x] = true; }
+      placedProps.push({ name, cx: (tx + fw / 2) * T, base: (ty + 1) * T - 1, tx, ty, fw });
+    }
+    for (let i = decor.length - 1; i >= 0; i--) { // quitar cactus, árboles o rocas que quedarían encima
+      const d = decor[i];
+      if (placedProps.some(p => d.x >= p.tx - 1 && d.x <= p.tx + p.fw && d.y >= p.ty - 1 && d.y <= p.ty + 1)) {
+        if (d.t === 'cactus' || d.t === 'tree' || d.t === 'hay') solid[d.y][d.x] = false;
+        decor.splice(i, 1);
+      }
+    }
+  }
+  function drawPropAt(c, p, t) {
+    const def = PROPS[p.name];
+    if (!def || !def.ready) return;
+    const devW = def.uw * scaleOf() * dpr;
+    let lv = def.levels[0];
+    for (const L of def.levels) if (L.width >= devW) lv = L;
+    E(c, 'rgba(40,24,10,.26)', p.cx, p.base - 0.6, def.uw * 0.42, 2);
+    c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+    c.drawImage(lv, p.cx - def.uw / 2, p.base - def.uh, def.uw, def.uh);
+    if (p.name.startsWith('lamp')) glow(c, p.cx, p.base - def.uh * 0.8, 12, '255,190,80', 0.28 * (0.85 + 0.15 * Math.sin(t * 6 + p.cx)));
+  }
+  function drawFountain(c, t) { // fuente de la plaza (si no carga la imagen, queda la bomba de agua)
+    const def = PROPS.fountain;
+    if (!def || !def.ready) { drawPump(c, 19 * T, 13 * T, t); return; }
+    drawPropAt(c, { name: 'fountain', cx: 20 * T, base: 15 * T }, t);
+    for (let i = 0; i < 5; i++) { // destellos en el agua
+      const a = 0.5 + 0.5 * Math.sin(t * 3 + i * 1.7);
+      R(c, `rgba(255,255,255,${0.55 * a})`, 20 * T - 12 + i * 6 + Math.sin(i * 2.3) * 2, 15 * T - 11 + (i % 2) * 3, 1.1, 1.1);
+    }
   }
 
   // ---------- identidad de cada edificio según el trabajo del agente ----------
@@ -1313,8 +1395,16 @@
       else if (d.t === 'tree') objs.push({ y: by, f: () => drawTree(c, cx, by, d.v) });
       else if (d.t === 'hay') objs.push({ y: by, f: () => drawHay(c, cx, by) });
     });
-    plazaProps.forEach(p => objs.push({ y: p.y * T + 14, f: () => (p.t === 'barrel' ? drawBarrel : drawCrate)(c, p.x * T + 8, p.y * T + 14) }));
-    objs.push({ y: 15 * T, f: () => drawPump(c, 19 * T, 13 * T, t) });
+    plazaProps.forEach((p, i) => objs.push({
+      y: p.y * T + 14,
+      f: () => {
+        const name = p.t === 'barrel' ? ['barrel1', 'barrel2', 'barrel4', 'barrel1'][i % 4] : ['crate1', 'crate2'][i % 2];
+        if (PROPS[name].ready) drawPropAt(c, { name, cx: p.x * T + 8, base: p.y * T + 15 }, t);
+        else (p.t === 'barrel' ? drawBarrel : drawCrate)(c, p.x * T + 8, p.y * T + 14);
+      },
+    }));
+    placedProps.forEach(p => objs.push({ y: p.base, f: () => drawPropAt(c, p, t) }));
+    objs.push({ y: 15 * T, f: () => drawFountain(c, t) });
     objs.push({ y: py, f: () => drawPlayer(c, px, py, t, moving, face) });
     objs.sort((a, b) => a.y - b.y).forEach(o => { if (o.y > Tp - 6 && o.y < B + 40) o.f(); });
   }
