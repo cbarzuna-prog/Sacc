@@ -14,6 +14,7 @@
 3. Cada agente de IA vive y trabaja en su propia casa.
 4. Primera etapa: construir el pueblo **vacío** (sin personajes): casas, caminos, árboles, plaza central y ayuntamiento. Todas las casas se pueden entrar.
 5. Trabajamos en la nube (sesión de Claude Code en el contenedor, repo `cbarzuna-prog/Sacc`, rama `claude/wonderful-tesla-kux33u`).
+7. Estilo elegido: Lejano Oeste tipo Red Dead Redemption. 10 casas (3 a cada lado, 2 arriba, 2 abajo), ayuntamiento al norte, plaza central con bomba de agua. Todo dibujado con código (sin imágenes externas, sin API keys, sin nada que corra solo).
 6. Higgsfield: la conexión de Claude solo puede ver saldo, modelos y generaciones; no genera. Plan Starter.
 
 ## Registro de construcción
@@ -26,7 +27,11 @@
 - **Higgsfield al final:** _pendiente_
 - **Uso de Claude al final:** _pendiente_
 - **Límite de uso / uso extra pagado:** ninguno hasta ahora
-- **Qué se construyó:** nada todavía
+- **Qué se construyó:**
+  - 6 imágenes de prueba en Canva (2 futuristas, medieval, renacimiento, lejano oeste, victoriana). No se usó Higgsfield (sigue en 200 créditos). Gasto en Canva: no medido.
+  - El usuario eligió el **Lejano Oeste**, estilo "Red Dead Redemption" (ambiente polvoriento, pixel art 16 bits visto desde arriba).
+  - Pieza 1 (pueblo vacío y recorrible): `ai-village/index.html`, `style.css`, `game.js`. 10 casas numeradas, ayuntamiento, plaza con bomba de agua, caminos hasta cada puerta, jardines despejados, cactus y árboles secos. Todas las casas y el ayuntamiento se pueden entrar. Un "visitante" (vaquero pequeño) se mueve con flechas/WASD; Esc sale de una casa.
+  - Comprobado con navegador automático: las 10 casas y el ayuntamiento se entran y se sale de ellos, sin errores.
 
 ## Datos para el total final
 - Precio por crédito de Higgsfield: _pendiente_
