@@ -287,6 +287,7 @@
       }
       def.ready = true;
     };
+    img.onerror = () => { if (def.fallback && def.file !== def.fallback) { def.file = def.fallback; loadSpriteFile(def, minW); } };
     img.src = def.file;
   }
   for (const key in SPRITES) loadSpriteFile(SPRITES[key]);
@@ -461,7 +462,7 @@
   for (let ty = 0; ty < MH; ty++) for (let tx = 0; tx < MW; tx++) if (kind[ty][tx] > 0 && !solid[ty][tx] && !inYard(tx, ty)) AG_TARGETS.push([tx, ty]);
 
   const mkAgent = (d, i, extra) => {
-    const sp = { file: `agents/${d.id}.png` };
+    const sp = d.isWorker ? { file: `agents/${d.id}.png` } : { file: `agents/h_${d.id}.png`, fallback: `agents/${d.id}.png` }; // los héroes nuevos (h_*) si existen; si no, el sprite anterior
     loadSpriteFile(sp, 1e9);
     return Object.assign({ def: d, sp, mode: 'room', room: String(d.house), seat: null, plans: {}, st: 'seated', timer: agRand(2 + i * 1.5, 14 + i * 3), x: 0, y: 0, rx: 0, ry: 0, face: 'down',
       path: [], rpath: [], walkT: agRand(0, 4), moving: false, blockT: 0, near: false, onArrive: null, onWait: null, goal: null, tail: [], yardUntil: 0, leaveAt: 0, afterLeave: null, active: true }, extra || {});
@@ -1440,8 +1441,16 @@
   loadSpriteFile(CHIEF, 1e9); // sin versiones reducidas: se dibuja con píxeles nítidos
   const CHIEF_ROW = { down: 0, left: 1, right: 2, up: 3 };
   const CHIEF_CW = 120, CHIEF_CH = 170, CHIEF_BASE = 166, CHIEF_UPP = 0.15; // unidades por píxel: ~24 de alto = 1/12 de una habitación
+  const CHERO = { file: 'chief/hero.png' }; // tu héroe (celdas de 240x340, igual que los demás: frente, derecha, izquierda, espaldas)
+  loadSpriteFile(CHERO, 1e9);
   function drawChief(c, x, y, t, moving, face) {
     shadow(c, x, y, 6.2, 2.1);
+    if (CHERO.ready) {
+      const row = AG_ROW[face] ?? 0, col = moving ? AG_FRAMES[Math.floor(t * 8) % 4] : 1, k = AG_UPP;
+      c.imageSmoothingEnabled = k * scaleOf() * dpr < 1; c.imageSmoothingQuality = 'high';
+      c.drawImage(CHERO.levels[0], col * AG_CW, row * AG_CH, AG_CW, AG_CH, x - AG_CW / 2 * k, y - AG_BASE * k, AG_CW * k, AG_CH * k);
+      return;
+    }
     const row = CHIEF_ROW[face] ?? 0, col = moving ? Math.floor(t * 8) % 4 : 2;
     const k = CHIEF_UPP, bob = moving && (col === 0 || col === 2) ? 0.25 : 0;
     const img = CHIEF.levels[0], devPerSrc = k * scaleOf() * dpr;
@@ -1449,7 +1458,7 @@
     c.drawImage(img, col * CHIEF_CW, row * CHIEF_CH, CHIEF_CW, CHIEF_CH, x - CHIEF_CW / 2 * k, y - CHIEF_BASE * k - bob, CHIEF_CW * k, CHIEF_CH * k);
   }
   function drawPlayer(c, x, y, t, moving, face) {
-    if (CHIEF.ready) { drawChief(c, x, y, t, moving, face); return; }
+    if (CHERO.ready || CHIEF.ready) { drawChief(c, x, y, t, moving, face); return; }
     const s = moving ? Math.sin(t * 14) : 0;
     const bob = moving ? Math.abs(s) * 0.7 : 0;
     shadow(c, x, y, 6.6, 2.2);

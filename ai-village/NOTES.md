@@ -121,3 +121,14 @@ Pendiente (arte, necesita el sí del usuario antes de generar): hojas de caminat
 - Llegaron y se cortaron con `scratchpad/make_sheet.py` (fondo blanco → transparente, 12 cuadros alineados por los pies, celdas 240×340): Freya Lindqvist (`w_driver`), Olu Bankole (`w_broker`), Mateo Alvarado (`w_promoter`), Priya Nair (`w_adman`), Dmitri Volkov (`w_reporter`). Faltan: Tomás (`w_banker`), Naomi (`w_trader`), Ravi (`w_scholar`) y Lucía (`w_postman`). El usuario pidió esperar a los otros 4 antes de subir.
 - Probado en modo prueba: aparecen en el jardín de su director, pasean y en la reunión se paran junto a la pared de su lado.
 - Llegaron las 4 que faltaban: Lucía (`w_postman`), Ravi (`w_scholar`), Naomi (`w_trader`) y Tomás (`w_banker`). Ya están los 9 trabajadores en `agents/w_*.png` (cortados con `make_sheet.py`, que ahora también limpia restos de sombra bajo los pies). Probado en modo prueba: 9 activos, sin errores.
+
+### Héroes nuevos recibidos (ChatGPT)
+- Una hoja con 8 héroes y otra con el héroe del usuario (Capitán Humano). Se cortaron con `scratchpad/hero_sheets.py` (asigna cada pieza al cuadro más cercano, así las capas no se cortan) y se guardaron SIN borrar los sprites anteriores: `agents/h_<id>.png` y `chief/hero.png`. El juego usa el `h_` si existe y, si no, el anterior.
+- Asignación (por el aspecto): trader=pelo rojo y antifaz verde, scholar=moño gris y traje morado, reporter=gorra café y traje rojo/azul, promoter=sombrero de paja y traje crema, postman=piel oscura y gorra verde, mayor=sombrero de copa, driver=sombrero ocre y barba blanca, banker=lentes y bigote. Por confirmar con el usuario.
+- Faltan: Capitán Eslogan (`adman`) y Piedra Angular (`broker`) (siguen con el dibujo anterior).
+- Resolución: los 8 vienen más pequeños que el héroe solo (píxeles más gruesos al acercar). Mejor uno por imagen.
+
+### Héroes: los 10 en versión individual (+ el del usuario)
+- Cortados con `scratchpad/hero_sheets.py` y guardados como `agents/h_<id>.png` (banker, trader, scholar, postman, reporter, adman, promoter, broker, driver, mayor) y `chief/hero.png` (Capitán Humano, tuyo). Los sprites anteriores siguen en `agents/` como respaldo (el juego usa `h_` si existe).
+- Pendiente: una hoja de 4 columnas (hombre joven de pelo castaño, armadura marrón, capa turquesa, brújula) que no se identificó; podría ser una alternativa para el héroe del usuario.
+- Siguiente fase: aldea (casas) que represente cada poder, con aprobación antes de generar.

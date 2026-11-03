@@ -45,7 +45,8 @@
     AV[id] = '';
     const im = new Image();
     im.onload = () => { const c = document.createElement('canvas'); c.width = c.height = 120; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(im, 240 + 28, 8, 184, 184, 0, 0, 120, 120); AV[id] = c.toDataURL(); renderRoster(); };
-    im.src = 'agents/' + id + '.png';
+    im.onerror = () => { if (!im.dataset.fb) { im.dataset.fb = 1; im.src = 'agents/' + id + '.png'; } };
+    im.src = (id.startsWith('w_') ? 'agents/' : 'agents/h_') + id + '.png';
     return '';
   }
 
