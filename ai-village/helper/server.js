@@ -128,7 +128,7 @@ const histText = h => { // lo más reciente completo, hasta un presupuesto de ca
 function personPrompt(p, message, history, extra) {
   return [
     `Estás en el chat del pueblo "My AI Village". Eres ${p.name}, ${p.role}. Tus instrucciones completas están en CLAUDE.md de esta carpeta (ya las conoces). Para tener contexto puedes leer la carpeta común ${path.join(ROOT, 'team', 'shared')} (EQUIPO.md, REGLAS.md y SOBRE_EL_USUARIO.md); solo se lee, nunca se escribe.`,
-    `Tu memoria (notes.md):\n${clip(readSafe(path.join(p.dir, 'notes.md')), 3500) || '(vacía)'}`,
+    `Tu memoria (notes.md):\n${clip(readSafe(path.join(p.dir, 'notes.md')), 3500) || '(vacía)'}\nTus charlas recientes con el usuario y otros (charlas.md, lo más reciente al final):\n${readSafe(path.join(p.dir, 'charlas.md')).slice(-2500) || '(ninguna todavía)'}`,
     `Solo conoces esta conversación, tu carpeta y tus notas: si el usuario se refiere a algo que no ves aquí, dilo y pregúntale en una frase; nunca inventes mensajes o conversaciones anteriores. Habla en español, corto y en tu personalidad (${p.personality}). Máximo unas 6 frases. No inventes datos. No hagas nada en el mundo real: solo conversas y propones.`,
     accessText(p),
     needsText(p),
@@ -139,7 +139,7 @@ function personPrompt(p, message, history, extra) {
 }
 function appendNote(p, line) {
   if (FAKE) return; // en modo prueba no se escribe nada en las notas
-  try { fs.appendFileSync(path.join(p.dir, 'notes.md'), `\n- ${now()} · Chat: ${line}`); } catch { /* si no se puede escribir, no pasa nada */ }
+  try { fs.appendFileSync(path.join(p.dir, 'charlas.md'), `\n- ${now()} · Chat: ${line}`); } catch { /* si no se puede escribir, no pasa nada */ }
 }
 
 // ---- respuestas de prueba (sin gastar nada) ----

@@ -2,3 +2,5 @@ node_modules/
 *.log
 helper/data/
 team/chief/pendientes.md
+team/*/charlas.md
+team/*/worker/charlas.md
