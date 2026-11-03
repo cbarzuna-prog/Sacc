@@ -20,5 +20,10 @@
     "model": "llama3.2:3b",
     "minSecondsBetween": 60,
     "maxPerDay": 12
-  }
+  },
+  "claudeExtraArgs": [
+    "--disable-slash-commands",
+    "--setting-sources",
+    "project,local"
+  ]
 }

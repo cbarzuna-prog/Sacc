@@ -52,7 +52,10 @@ function runClaude(person, prompt) {
     const env = Object.assign({}, process.env);
     delete env.ANTHROPIC_API_KEY; delete env.ANTHROPIC_AUTH_TOKEN; // nunca llaves de API: solo tu inicio de sesión
     const args = ['-p', '--model', person.model, '--output-format', 'json', '--tools', 'Read,Grep,Glob', '--no-session-persistence'];
-    const extra = accessTools(person); if (extra.length) args.push('--allowedTools', extra.join(','));
+    // Para que cada personaje cargue lo mínimo (sin tus plugins ni habilidades, y sin conectores salvo los que se le dieron a propósito)
+    args.push(...(CFG.claudeExtraArgs || []));
+    const extra = accessTools(person);
+    if (extra.length) args.push('--allowedTools', extra.join(',')); else args.push('--strict-mcp-config');
     const child = spawn(CFG.claudeCommand, args, { cwd: person.dir, env, shell: process.platform === 'win32', stdio: ['pipe', 'pipe', 'pipe'] });
     let out = '', err = '', done = false;
     const timer = setTimeout(() => { if (!done) { done = true; child.kill(); reject(new Error('tardó demasiado')); } }, CFG.timeoutSeconds * 1000);
@@ -61,8 +64,9 @@ function runClaude(person, prompt) {
     child.on('error', e => { if (!done) { done = true; clearTimeout(timer); reject(new Error('no pude abrir Claude Code (' + e.code + '). ¿Está instalado y con sesión iniciada?')); } });
     child.on('close', code => {
       if (done) return; done = true; clearTimeout(timer);
+      if (code !== 0 || process.env.VILLAGE_DEBUG) console.log(`[claude ${person.id}] código ${code}`, clip(err, 300), clip(out, 300));
       if (code !== 0 && !out) return reject(new Error(clip(err, 300) || 'Claude Code terminó con error ' + code));
-      try { const j = JSON.parse(out); if (j.is_error) return reject(new Error(clip(j.result, 300))); resolve(String(j.result || '').trim()); }
+      try { const j = JSON.parse(out); if (j.is_error) console.log(`[claude ${person.id}] error:`, clip(j.result, 300), j.usage ? 'tokens de entrada: ' + (j.usage.input_tokens + (j.usage.cache_creation_input_tokens || 0) + (j.usage.cache_read_input_tokens || 0)) : ''); if (j.is_error) return reject(new Error(clip(j.result, 300))); resolve(String(j.result || '').trim()); }
       catch { resolve(out.trim()); }
     });
     child.stdin.end(prompt);
