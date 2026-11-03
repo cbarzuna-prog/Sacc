@@ -116,3 +116,8 @@ Decisión del usuario: los personajes pasan a ser **superhéroes**, cada uno con
 | Eleanor Sato | Comandante Cinta | Visión de Tablero |
 Hecho (texto, gratis): nombres, poderes, CLAUDE.md con sección "Mi identidad de héroe", EQUIPO.md, tarjeta al pasar el ratón, efecto de aura.
 Pendiente (arte, necesita el sí del usuario antes de generar): hojas de caminata nuevas (Canva, a partir de las existentes; primero una de prueba), edificios y, después, interiores.
+
+### Trabajadores recibidos (5 de 9)
+- Llegaron y se cortaron con `scratchpad/make_sheet.py` (fondo blanco → transparente, 12 cuadros alineados por los pies, celdas 240×340): Freya Lindqvist (`w_driver`), Olu Bankole (`w_broker`), Mateo Alvarado (`w_promoter`), Priya Nair (`w_adman`), Dmitri Volkov (`w_reporter`). Faltan: Tomás (`w_banker`), Naomi (`w_trader`), Ravi (`w_scholar`) y Lucía (`w_postman`). El usuario pidió esperar a los otros 4 antes de subir.
+- Probado en modo prueba: aparecen en el jardín de su director, pasean y en la reunión se paran junto a la pared de su lado.
+- Llegaron las 4 que faltaban: Lucía (`w_postman`), Ravi (`w_scholar`), Naomi (`w_trader`) y Tomás (`w_banker`). Ya están los 9 trabajadores en `agents/w_*.png` (cortados con `make_sheet.py`, que ahora también limpia restos de sombra bajo los pies). Probado en modo prueba: 9 activos, sin errores.
