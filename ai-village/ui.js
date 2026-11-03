@@ -189,10 +189,13 @@
   }
 
   // ---------- hablar con el programita ----------
-  async function post(path, body) {
+  async function post(path, body, retried) {
     if (!helper) throw new Error('sin conexión');
     const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Village-Token': helper.token }, body: JSON.stringify(body) });
     const j = await r.json();
+    if (r.status === 403 && !retried) { // el programita se reinició y estrenó llave: pedimos la nueva y reintentamos
+      try { const n = await (await fetch('/__helper.json')).json(); helper.token = n.token; return post(path, body, true); } catch { throw new Error('el programita no responde: recarga la página'); }
+    }
     if (!r.ok) throw new Error(j.error || 'error');
     return j;
   }
