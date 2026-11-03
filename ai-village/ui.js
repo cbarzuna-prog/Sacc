@@ -109,7 +109,7 @@
     if (!talkLines.length) box.appendChild(el('sys', '', 'Aquí aparecen las conversaciones reales entre vecinos (solo cuando tienen algo que decirse). Nada de charla porque sí.'));
     talkLines.forEach(c => {
       const d = el('', new Date(c.t).toTimeString().slice(0, 5) + ' · ' + c.a + ' ↔ ' + c.b, '');
-      c.lines.forEach(l => { const p = document.createElement('div'); const b = document.createElement('b'); b.textContent = l.name.split(' ')[0].replace(/^Profesora$/, 'Ottoline') + ': '; p.appendChild(b); p.appendChild(document.createTextNode(l.text)); d.appendChild(p); });
+      c.lines.forEach(l => { const p = document.createElement('div'); const b = document.createElement('b'); b.textContent = l.name.split(' ')[0].replace(/^Profesora$/, 'Doctora Archivo') + ': '; p.appendChild(b); p.appendChild(document.createTextNode(l.text)); d.appendChild(p); });
       box.appendChild(d);
     });
     box.scrollTop = box.scrollHeight;
@@ -204,7 +204,7 @@
   async function send(id, text) { // uno a uno; la jefa de gabinete además reparte a los directores
     if (chat.busy.has(id)) return;
     const h = hist(id), before = h.slice();
-    h.push({ from: 'user', text }); chat.busy.add(id); renderAll();
+    h.push({ from: 'user', text }); chat.busy.add(id); V.power(id, true); renderAll();
     if (id === 'mayor') logAdd('me', 'Tú → ' + people.mayor.name, text);
     try {
       const j = await post('/api/chat', { agent: id, message: text, history: before.filter(m => !m.sys).slice(-30) });
@@ -222,7 +222,7 @@
       h.push({ from: id, sys: true, text: errMsg(e) });
       if (id === 'mayor') logAdd('sys', '', errMsg(e));
     }
-    chat.busy.delete(id); renderAll(); save();
+    chat.busy.delete(id); V.power(id, false); renderAll(); save();
   }
   async function sendAll(text) { // a toda la sala: cada uno contesta por su cuenta (3 a la vez)
     if (chat.busy.has('all')) return;
@@ -232,10 +232,10 @@
     const worker = async () => {
       while (i < ids.length) {
         const id = ids[i++], own = hist(id), before = own.slice();
-        own.push({ from: 'user', text: '(a todos en la reunión) ' + text });
+        own.push({ from: 'user', text: '(a todos en la reunión) ' + text }); V.power(id, true);
         try { const j = await post('/api/chat', { agent: id, message: text, history: before, plain: true }); own.push({ from: id, text: j.reply }); h.push({ from: id, text: j.reply }); afterChat(j); }
         catch (e) { h.push({ from: id, sys: true, text: nameOf(id) + ': ' + errMsg(e) }); if (e.message === 'sin conexión') i = ids.length; }
-        renderAll();
+        V.power(id, false); renderAll();
       }
     };
     await Promise.all([worker(), worker(), worker()]);
@@ -244,9 +244,11 @@
 
   // ---------- órdenes con palabras: "ven aquí", "llama a...", "vuelve al trabajo" ----------
   const norm = t => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  const ALIAS = Object.keys(people).map(id => [id, norm(people[id].name).replace(/[^a-zñ ]/g, ' ').split(/\s+/).filter(w => w.length >= 3 && w !== 'profesora')]);
+  const ALIASES = { banker: ['balance', 'augustus'], trader: ['ticker', 'flash', 'pip', 'philippa'], scholar: ['archivo', 'ottoline'], postman: ['relampago', 'cassius'], reporter: ['detectora', 'billie'],
+    adman: ['eslogan', 'sal', 'salvador'], promoter: ['narradora', 'clementine'], broker: ['piedra', 'angular', 'barnaby'], driver: ['imparable', 'everett'], mayor: ['comandante', 'cinta', 'eleanor', 'jefa'] };
+  const ALIAS = Object.keys(people).map(id => [id, ALIASES[id] || norm(people[id].name).replace(/[^a-zñ ]/g, ' ').split(/\s+/).filter(w => w.length >= 3)]);
   const namesIn = text => { const t = ' ' + norm(text).replace(/[^a-zñ ]/g, ' ').replace(/\s+/g, ' ') + ' '; return ALIAS.filter(([, ws]) => ws.some(w => t.includes(' ' + w + ' '))).map(a => a[0]); };
-  const short = id => people[id].name.replace(/^Profesora /, '').replace(/"/g, '').split(' ')[0];
+  const short = id => people[id].name;
   function sysSay(ctx, text) { // aviso en la conversación abierta
     if (ctx) hist(ctx).push({ from: ctx, sys: true, text });
     renderAll(); save(); toast(text);
@@ -279,7 +281,7 @@
         if (r === 'ok') { logAdd('task', '📞 ' + people.mayor.name + ' llama a ' + people[i].name, 'Le pide que vaya contigo ahora mismo.'); logAdd('sys', '', people[i].name + ' va en camino.'); }
         else logAdd('sys', '', reasons[r] || r);
       });
-      sysSay(ctx, 'Eleanor llama por teléfono a ' + ids.map(short).join(' y a ') + '.');
+      sysSay(ctx, 'Comandante Cinta llama por teléfono a ' + ids.map(short).join(' y a ') + '.');
       return true;
     }
     const come = /\b(ven|vengan|venga|veni|acercate|come)\b/.test(t) && /(aqui|aca|here|over)/.test(t);
@@ -311,7 +313,7 @@
   $('btnTalk').addEventListener('click', () => toggleTab('charlas'));
   $('btnTodo').addEventListener('click', () => toggleTab('pendientes'));
   $('remindToggle').addEventListener('click', () => { todo.remind = !todo.remind; saveRemind(); updateBadge(); });
-  $('snooze').addEventListener('click', () => { todo.snoozeUntil = Date.now() + 3600e3; saveRemind(); toast('Eleanor te vuelve a recordar en 1 hora.'); });
+  $('snooze').addEventListener('click', () => { todo.snoozeUntil = Date.now() + 3600e3; saveRemind(); toast('Comandante Cinta te vuelve a recordar en 1 hora.'); });
   $('todoform').addEventListener('submit', e => { e.preventDefault(); const t = $('todoin').value.trim(); if (!t) return; $('todoin').value = ''; todoAct({ action: 'add', what: t }); });
   $('btnMeet').addEventListener('click', () => { if (V.meeting() === 'on') V.endMeeting(); else V.callMeeting(); });
   $('talkToggle').addEventListener('click', async () => {
@@ -365,7 +367,7 @@
     const c = $('hovercard');
     if (!d) { c.classList.add('hidden'); return; }
     const k = cardFor(d);
-    $('hcName').textContent = d.name + ' · ' + d.role; $('hcJob').textContent = k.job; $('hcBoss').textContent = k.boss;
+    $('hcName').textContent = d.name + ' · ' + d.role; $('hcJob').textContent = (d.power ? '⚡ ' + d.power.name + ': ' + d.power.text + ' ' : '') + k.job; $('hcBoss').textContent = k.boss;
     c.classList.remove('hidden');
     c.style.left = Math.max(6, Math.min(window.innerWidth - c.offsetWidth - 6, x + 14)) + 'px';
     c.style.top = Math.max(6, Math.min(window.innerHeight - c.offsetHeight - 6, y + 16)) + 'px';

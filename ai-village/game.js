@@ -759,6 +759,7 @@
     if (!a.sp.ready || !img) return;
     const k = AG_UPP, col = moving ? AG_FRAMES[Math.floor(a.walkT * 5.5) % 4] : 1, row = AG_ROW[face] ?? 0;
     shadow(c, x, y, 6.2, 2.1);
+    if (a.powering || a.powerUntil > time) drawPowerAura(c, a, x, y);
     c.imageSmoothingEnabled = k * scaleOf() * dpr < 1; c.imageSmoothingQuality = 'high';
     c.drawImage(img, col * AG_CW, row * AG_CH, AG_CW, AG_CH, x - AG_CW / 2 * k, y - AG_BASE * k, AG_CW * k, AG_CH * k);
     if (a.phoneUntil > time) drawPhone(c, a, x, y);
@@ -1871,6 +1872,14 @@
     c.strokeStyle = '#3a2412'; c.lineWidth = 0.35; c.stroke();
     R(c, '#3a2412', bx - 0.4, by - 1.7, 0.8, 2.1); R(c, '#3a2412', bx - 0.4, by + 0.8, 0.8, 0.8);
   }
+  function drawPowerAura(c, a, x, y) { // brillo y chispas del color de su poder mientras lo usa
+    const col = (a.def.power && a.def.power.color) || '255,220,120', t = time, cy = y - 12;
+    glow(c, x, cy, 16 + 2 * Math.sin(t * 7), col, 0.55);
+    for (let i = 0; i < 6; i++) {
+      const ang = t * 2.2 + i * 1.047, r = 8 + 3 * Math.sin(t * 3 + i * 2);
+      R(c, `rgba(${col},${0.55 + 0.4 * Math.sin(t * 8 + i)})`, x + Math.cos(ang) * r - 0.5, cy + Math.sin(ang) * r * 0.9 - 0.5, 1.1, 1.1);
+    }
+  }
   function drawTalkBubble(c, a, x, y) { // globito con puntos mientras conversan
     const bx = x, by = y - AG_BASE * AG_UPP - 3.5;
     c.fillStyle = 'rgba(255,250,235,.95)'; c.beginPath(); c.ellipse(bx, by, 5.2, 3.2, 0, 0, 6.2832); c.fill();
@@ -2174,6 +2183,7 @@
   // ayudas para revisar el pueblo (no afectan al juego)
   window.VILLAGE = {
     callMeeting, endMeeting, nearestAgent, summon: summonAgent, sendBack,
+    power: (id, on) => { const a = AGENTS.find(q => q.def.id === id); if (!a) return; a.powering = !!on; if (!on) a.powerUntil = time + 1.4; },
     setNeeds: ids => AGENTS.forEach(a => { a.needs = ids.includes(a.def.id); }),
     setEncounters: on => { ENC.on = !!on; ENC.next = time + 20; },
     roster: () => AGENTS.filter(a => a.active).map(a => a.def),

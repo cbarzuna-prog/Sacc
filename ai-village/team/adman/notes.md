@@ -1,4 +1,4 @@
-# Notas de Salvador "Sal" Quintero
+# Notas de Capitán Eslogan
 
 Mi memoria. La leo al empezar y la actualizo al terminar cada tarea. Corta y ordenada.
 

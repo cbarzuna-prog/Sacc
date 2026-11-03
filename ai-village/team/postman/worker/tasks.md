@@ -1,6 +1,6 @@
 # Tareas de Lucía Ferreyra
 
-Solo mi director (Cassius Adeyemi) agrega tareas aquí. Cada pieza que entrego la revisa mi director antes de darla por completa.
+Solo mi director (Cartero Relámpago) agrega tareas aquí. Cada pieza que entrego la revisa mi director antes de darla por completa.
 
 ## Pendientes
 - (ninguna)

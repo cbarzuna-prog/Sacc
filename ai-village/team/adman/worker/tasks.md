@@ -1,6 +1,6 @@
 # Tareas de Priya Nair
 
-Solo mi director (Salvador "Sal" Quintero) agrega tareas aquí. Cada pieza que entrego la revisa mi director antes de darla por completa.
+Solo mi director (Capitán Eslogan) agrega tareas aquí. Cada pieza que entrego la revisa mi director antes de darla por completa.
 
 ## Pendientes
 - (ninguna)

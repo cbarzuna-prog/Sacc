@@ -1,4 +1,4 @@
-# Notas de Barnaby Crowe
+# Notas de Piedra Angular
 
 Mi memoria. La leo al empezar y la actualizo al terminar cada tarea. Corta y ordenada.
 
@@ -13,7 +13,7 @@ Mi memoria. La leo al empezar y la actualizo al terminar cada tarea. Corta y ord
 
 ## Preguntas abiertas
 - ¿En qué zona, tipo de propiedad y rango de precio piensa el usuario?
-- ¿Cuánto puede aportar y con qué financiamiento? (Pedírselo a Augustus.)
+- ¿Cuánto puede aportar y con qué financiamiento? (Pedírselo a Capitán Balance.)
 - ¿Dónde consigo comparables sin pagar ni usar API keys?
 
 ## Registro de decisiones

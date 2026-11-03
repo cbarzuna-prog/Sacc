@@ -1,4 +1,4 @@
-# Notas de Pip (Directora de Trading)
+# Notas de Flash Ticker (Directora de Trading)
 
 Mi memoria. La leo al empezar y la actualizo al terminar cada tarea. Corta y ordenada.
 

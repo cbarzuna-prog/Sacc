@@ -1,6 +1,6 @@
 # Tareas de Tomás Villaverde
 
-Solo mi director (Augustus Whitcombe) agrega tareas aquí. Cada pieza que entrego la revisa mi director antes de darla por completa.
+Solo mi director (Capitán Balance) agrega tareas aquí. Cada pieza que entrego la revisa mi director antes de darla por completa.
 
 ## Pendientes
 - (ninguna)

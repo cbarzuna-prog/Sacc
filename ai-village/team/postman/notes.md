@@ -1,4 +1,4 @@
-# Notas de Cassius Adeyemi
+# Notas de Cartero Relámpago
 
 Mi memoria. La leo al empezar y la actualizo al terminar cada tarea. Corta y ordenada.
 

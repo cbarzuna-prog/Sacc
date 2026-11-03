@@ -1,4 +1,4 @@
-# Notas de Eleanor Sato
+# Notas de Comandante Cinta
 
 Mi memoria. La leo al empezar y la actualizo al terminar cada tarea. Corta y ordenada.
 

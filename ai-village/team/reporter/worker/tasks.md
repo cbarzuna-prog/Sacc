@@ -1,6 +1,6 @@
 # Tareas de Dmitri Volkov
 
-Solo mi directora (Billie Fairweather) agrega tareas aquí. Cada pieza que entrego la revisa mi directora antes de darla por completa.
+Solo mi directora (Detectora Fuente) agrega tareas aquí. Cada pieza que entrego la revisa mi directora antes de darla por completa.
 
 ## Pendientes
 - (ninguna)

@@ -29,10 +29,10 @@ Las respuestas son de mentira (dicen "modo prueba"), no se usa Claude.
 El "advisor" (Fable 5.1) no se puede encender desde la línea de comandos; los directores usan solo su modelo.
 
 ## Acceso a tu Gmail y tu calendario (solo lectura)
-- Cassius Adeyemi (director de Bandeja y email) puede **leer** tu Gmail y ver tu Google Calendar a través de **tus conectores de claude.ai**. Está en `helper/config.json`, sección `access`.
+- Cartero Relámpago (director de Bandeja y email) puede **leer** tu Gmail y ver tu Google Calendar a través de **tus conectores de claude.ai**. Está en `helper/config.json`, sección `access`.
 - Solo se permiten herramientas de lectura: buscar y leer correos, ver etiquetas, ver calendarios y eventos. **No puede** enviar, responder, borrar, archivar, crear borradores ni crear o cambiar eventos.
 - Para que funcione: en claude.ai → Ajustes → Conectores, conecta **Gmail** y **Google Calendar**, y usa Claude Code con la misma cuenta. Al abrir el programita verás la línea "Acceso a conectores: …".
-- Si Cassius dice que sigue sin acceso, casi seguro el conector no está conectado o Claude Code no tiene sesión con esa cuenta. No lo puedo probar desde la nube.
+- Si Cartero Relámpago dice que sigue sin acceso, casi seguro el conector no está conectado o Claude Code no tiene sesión con esa cuenta. No lo puedo probar desde la nube.
 - Lo que Claude lee de tus correos pasa por tu suscripción de Claude, como cualquier otro mensaje.
 
 ## Charlas entre vecinos con un modelo local (gratis)
@@ -42,13 +42,13 @@ El "advisor" (Fable 5.1) no se puede encender desde la línea de comandos; los d
 - Para instalarlo (una vez): instala Ollama desde ollama.com y en una terminal escribe `ollama pull llama3.2:3b` (unos 2 GB). Puedes cambiar de modelo en `helper/config.json` → `smallTalk.model`.
 
 ## Internet para los directores
-- Los 10 (los 9 directores y Eleanor) pueden **buscar en la web y abrir páginas** con las herramientas de Claude Code (`WebSearch` y `WebFetch`), incluidas en tu plan, sin llaves de API. Está en `helper/config.json` → `webAccess` (quita un nombre de la lista para quitárselo).
+- Los 10 (los 9 directores y Comandante Cinta) pueden **buscar en la web y abrir páginas** con las herramientas de Claude Code (`WebSearch` y `WebFetch`), incluidas en tu plan, sin llaves de API. Está en `helper/config.json` → `webAccess` (quita un nombre de la lista para quitárselo).
 - Cada dato de internet debe traer **fuente y fecha**. Si no lo encuentran, deben decirlo.
-- Nunca deben poner datos privados tuyos en una búsqueda. Cassius tiene una regla extra: nada de contenido de tus correos en búsquedas.
+- Nunca deben poner datos privados tuyos en una búsqueda. Cartero Relámpago tiene una regla extra: nada de contenido de tus correos en búsquedas.
 - Gasta más plan que una charla normal, y lo que buscan sale de tu computadora hacia las páginas y hacia Anthropic.
 
 ## Pendientes y recordatorios
 - Si a un director le falta algo que solo tú puedes dar (un dato, un acceso, una decisión, un archivo), lo anota en su respuesta y el programita lo guarda en `helper/data/todo.json` (no se sube a GitHub). Los personajes no escriben archivos.
-- Eleanor ve la lista (también en `team/chief/pendientes.md`) y puedes pedirle "¿qué pendientes tengo?".
+- Comandante Cinta ve la lista (también en `team/chief/pendientes.md`) y puedes pedirle "¿qué pendientes tengo?".
 - En el juego: pestaña **Pendientes** (botón 📝), con Hecho / Descartar / Hablar con…, y un "!" dorado sobre quien te necesita.
-- **Recordatorios (corren solos mientras la página está abierta):** cada 5 minutos, si hay pendientes, Eleanor camina hasta ti y lo anota en el Registro; cada 4 minutos un director con un pendiente te busca. Se pueden apagar o posponer 1 h en la pestaña Pendientes. No llaman a Claude, ni a ninguna API: son solo el juego en tu navegador. Si cierras la página, no hay recordatorios.
+- **Recordatorios (corren solos mientras la página está abierta):** cada 5 minutos, si hay pendientes, Comandante Cinta camina hasta ti y lo anota en el Registro; cada 4 minutos un director con un pendiente te busca. Se pueden apagar o posponer 1 h en la pestaña Pendientes. No llaman a Claude, ni a ninguna API: son solo el juego en tu navegador. Si cierras la página, no hay recordatorios.

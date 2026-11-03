@@ -1,4 +1,4 @@
-# Notas de Billie Fairweather
+# Notas de Detectora Fuente
 
 Mi memoria. La leo al empezar y la actualizo al terminar cada tarea. Corta y ordenada.
 

@@ -1,4 +1,4 @@
-# Notas de Augustus Whitcombe
+# Notas de Capitán Balance
 
 Mi memoria. La leo al empezar y la actualizo al terminar cada tarea. Corta y ordenada.
 
@@ -13,7 +13,7 @@ Mi memoria. La leo al empezar y la actualizo al terminar cada tarea. Corta y ord
 
 ## Preguntas abiertas
 - ¿Qué ingresos y gastos fijos tiene el usuario, y cómo me los comparte sin exponer datos sensibles?
-- ¿Cuánto dinero puede arriesgar el usuario en trading? (Pip lo va a preguntar.)
+- ¿Cuánto dinero puede arriesgar el usuario en trading? (Flash Ticker lo va a preguntar.)
 - Hacer el inventario de suscripciones del proyecto (Claude Max 5x, Canva Pro, Higgsfield Starter, ChatGPT) con su costo mensual.
 
 ## Registro de decisiones

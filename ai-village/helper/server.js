@@ -50,7 +50,7 @@ const accessText = p => {
 
 // ---- pendientes: lo que a los directores les falta y solo tú puedes dar ----
 // Los personajes no pueden escribir archivos: cuando algo les falta, lo anotan en su respuesta como [[NECESITO: qué | por qué | urgencia]]
-// y el programita lo guarda aquí. Eleanor ve la lista y te la recuerda.
+// y el programita lo guarda aquí. Comandante Cinta ve la lista y te la recuerda.
 const DATA_DIR = path.join(__dirname, 'data'), TODO_FILE = path.join(DATA_DIR, 'todo.json');
 let TODO = [];
 try { TODO = JSON.parse(fs.readFileSync(TODO_FILE, 'utf8')); } catch { TODO = []; }

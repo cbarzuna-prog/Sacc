@@ -1,6 +1,6 @@
 # Tareas de Freya Lindqvist
 
-Solo mi director (Everett Ridgeway) agrega tareas aquí. Cada pieza que entrego la revisa mi director antes de darla por completa.
+Solo mi director (Mensajero Imparable) agrega tareas aquí. Cada pieza que entrego la revisa mi director antes de darla por completa.
 
 ## Pendientes
 - (ninguna)

@@ -1,4 +1,4 @@
-# Notas de Clementine Hartwell
+# Notas de Luz Narradora
 
 Mi memoria. La leo al empezar y la actualizo al terminar cada tarea. Corta y ordenada.
 

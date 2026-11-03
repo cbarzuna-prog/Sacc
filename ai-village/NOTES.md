@@ -99,3 +99,20 @@ Decisiones del usuario: asientos con la mitad de arriba del sprite de perfil (op
 
 ### Pendientes y recordatorios
 - Los directores avisan lo que les falta con [[NECESITO: …]]; el programita guarda la lista; pestaña Pendientes; "!" sobre quien te necesita; Eleanor te recuerda cada 5 min y un director te busca cada 4 min (solo con la página abierta, sin gastar plan; se pueden apagar o posponer).
+
+## Cambio de tema: aldea de superhéroes (2026-11-03)
+Decisión del usuario: los personajes pasan a ser **superhéroes**, cada uno con un superpoder que representa su trabajo. Nombres reemplazados por el nombre de héroe (se aceptan los viejos al hablar). Se rehacen: personajes (9 directores, jefa de gabinete y el usuario; los **trabajadores quedan igual**) y la aldea (**las casas deben representar el poder de su héroe**). Efecto sencillo en el juego (brillo y chispas del color del poder mientras usan su poder).
+| Antes | Héroe | Superpoder |
+|---|---|---|
+| Augustus Whitcombe | Capitán Balance | Rayos X de Cuentas |
+| Pip Calloway | Flash Ticker | Visión de Probabilidades |
+| Ottoline Marsh | Doctora Archivo | Mente Biblioteca |
+| Cassius Adeyemi | Cartero Relámpago | Triaje Instantáneo |
+| Billie Fairweather | Detectora Fuente | Detector de Verdad |
+| Sal Quintero | Capitán Eslogan | Doble Yo (A/B) |
+| Clementine Hartwell | Luz Narradora | Da Vida a los Lugares |
+| Barnaby Crowe | Piedra Angular | Sentido Sísmico |
+| Everett Ridgeway | Mensajero Imparable | Entrega Garantizada |
+| Eleanor Sato | Comandante Cinta | Visión de Tablero |
+Hecho (texto, gratis): nombres, poderes, CLAUDE.md con sección "Mi identidad de héroe", EQUIPO.md, tarjeta al pasar el ratón, efecto de aura.
+Pendiente (arte, necesita el sí del usuario antes de generar): hojas de caminata nuevas (Canva, a partir de las existentes; primero una de prueba), edificios y, después, interiores.
