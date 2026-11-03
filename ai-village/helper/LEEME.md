@@ -40,3 +40,9 @@ El "advisor" (Fable 5.1) no se puede encender desde la línea de comandos; los d
 - **No usa tu plan de Claude, ni llaves de API, ni internet.** Solo habla con `127.0.0.1`.
 - Viene **apagado**: lo enciendes tú en el panel de **Charlas** (tecla C), y solo si el modelo está instalado.
 - Para instalarlo (una vez): instala Ollama desde ollama.com y en una terminal escribe `ollama pull llama3.2:3b` (unos 2 GB). Puedes cambiar de modelo en `helper/config.json` → `smallTalk.model`.
+
+## Internet para los directores
+- Los 10 (los 9 directores y Eleanor) pueden **buscar en la web y abrir páginas** con las herramientas de Claude Code (`WebSearch` y `WebFetch`), incluidas en tu plan, sin llaves de API. Está en `helper/config.json` → `webAccess` (quita un nombre de la lista para quitárselo).
+- Cada dato de internet debe traer **fuente y fecha**. Si no lo encuentran, deben decirlo.
+- Nunca deben poner datos privados tuyos en una búsqueda. Cassius tiene una regla extra: nada de contenido de tus correos en búsquedas.
+- Gasta más plan que una charla normal, y lo que buscan sale de tu computadora hacia las páginas y hacia Anthropic.

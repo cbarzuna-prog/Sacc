@@ -25,5 +25,17 @@
     "--disable-slash-commands",
     "--setting-sources",
     "project,local"
+  ],
+  "webAccess": [
+    "banker",
+    "trader",
+    "scholar",
+    "postman",
+    "reporter",
+    "adman",
+    "promoter",
+    "broker",
+    "driver",
+    "mayor"
   ]
 }
