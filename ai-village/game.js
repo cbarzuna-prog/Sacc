@@ -265,8 +265,14 @@
     express: { file: 'sprites/express.png', w: 1329, h: 1038, width: 86, name: 'EXPRESS', plate: [496, 540, 335, 65], tcol: '#f0d890', lights: [[526, 725], [801, 725]] },
     tierras: { file: 'sprites/tierras.png', w: 1322, h: 1068, width: 86, name: 'TIERRAS', plate: [392, 393, 545, 79], tcol: '#e8c860', lights: [[216, 568], [1126, 568]] },
     promotora: { file: 'sprites/promotora.png', w: 1356, h: 1098, width: 86, name: 'PROMOTORA', plate: [559, 553, 234, 53], tcol: '#f8efd8', lights: [[38, 674], [1318, 674]] },
+    banco: { file: 'sprites/banco.png', w: 1388, h: 1099, width: 86, name: 'BANCO', plate: [469, 507, 449, 62], tcol: '#e8c860', lights: [[464, 759], [924, 759]] },
+    gaceta: { file: 'sprites/gaceta.png', w: 1317, h: 1127, width: 86, name: 'GACETA', plate: [338, 478, 641, 106], tcol: '#f0e8d0', lights: [[503, 745], [817, 745]] },
+    archivo: { file: 'sprites/archivo.png', w: 1376, h: 1092, width: 86, name: 'ARCHIVO', plate: [507, 565, 358, 72], tcol: '#e8dcc0', lights: [[539, 757], [824, 757]] },
+    metaads: { file: 'sprites/metaads.png', w: 1303, h: 1098, width: 86, name: 'META ADS', plate: [456, 532, 388, 109], tcol: '#0b57c4', lights: [[463, 742], [833, 742]] },
+    correo: { file: 'sprites/correo.png', w: 1323, h: 1088, width: 86, name: 'CORREO', plate: [511, 437, 331, 76], tcol: '#a8322a', lights: [[541, 649], [826, 649]] },
+    bolsa: { file: 'sprites/bolsa.png', w: 1248, h: 1093, width: 86, name: 'BOLSA', plate: [381, 564, 487, 87], tcol: '#7be08a', lights: [[439, 773], [814, 773]] },
   };
-  const SPRITE_FOR = { 7: 'promotora', 8: 'tierras', 9: 'express', 10: 'mansion' };
+  const SPRITE_FOR = { 1: 'banco', 2: 'bolsa', 3: 'archivo', 4: 'correo', 5: 'gaceta', 6: 'metaads', 7: 'promotora', 8: 'tierras', 9: 'express', 10: 'mansion' };
   for (const key in SPRITES) {
     const def = SPRITES[key];
     def.ready = false;
