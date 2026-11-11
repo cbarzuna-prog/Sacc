@@ -151,3 +151,10 @@ Pendiente (arte, necesita el sí del usuario antes de generar): hojas de caminat
 - El ayuntamiento tiene una silla al pie justo frente a la puerta: la entrada de esa sala usa un punto de aparición desplazado (`spawn`) para no quedar dentro de la silla.
 - Los dos héroes de Knock Knock y SACC aún no existen: sus habitaciones están vacías.
 - Hojas de objetos modernos: generadas en Canva, falta recortar (3 acciones) y cortar en objetos.
+
+### Héroes de Knock Knock y SACC (aprobados por el usuario, 2026-11-12)
+- **Llave Maestra** (antes Ignacio Barrantes), Director de Knock Knock (bienes raíces), casa 11. Poder: **Puertas Abiertas**: conocimiento infinito de bienes raíces; busca herramientas del sector y datos del mercado del GAM. Lentes: Barbara Corcoran (gente y relato), Sam Zell (ciclo/contrarian), Gary Keller (sistema).
+- **Maestro Revés** (antes Rodolfo Zamora), Director de SACC (club social, membresías), casa 12. Poder: **Círculo de Confianza**: conocimiento infinito de clubes sociales de Costa Rica para mejorar el valor de las membresías. Estilo inspirado en un gran campeón de tenis (sin ser esa persona). Lentes: Ray Oldenburg (tercer lugar), Robbie Kellman Baxter (membresía), calma de los campeones.
+- 12 puestos de director (antes 10, decisión del usuario). Carpetas `team/knock` y `team/sacc` (CLAUDE.md y notes.md), con internet (fuente y fecha) y reglas duras como los demás. Sin trabajador todavía.
+- En el juego aparecen solos cuando existan `agents/h_knock.png` y `agents/h_sacc.png`; en la reunión Llave Maestra se sienta en la silla del pie y Maestro Revés se queda de pie junto a la pared izquierda.
+- Pendiente: hojas de personaje (ChatGPT) de ambos.

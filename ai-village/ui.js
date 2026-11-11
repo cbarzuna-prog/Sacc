@@ -246,7 +246,7 @@
   // ---------- órdenes con palabras: "ven aquí", "llama a...", "vuelve al trabajo" ----------
   const norm = t => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   const ALIASES = { banker: ['balance', 'augustus'], trader: ['ticker', 'flash', 'pip', 'philippa'], scholar: ['archivo', 'ottoline'], postman: ['relampago', 'cassius'], reporter: ['detectora', 'billie'],
-    adman: ['eslogan', 'sal', 'salvador'], promoter: ['narradora', 'clementine'], broker: ['piedra', 'angular', 'barnaby'], driver: ['imparable', 'everett'], mayor: ['comandante', 'cinta', 'eleanor', 'jefa'] };
+    adman: ['eslogan', 'sal', 'salvador'], promoter: ['narradora', 'clementine'], broker: ['piedra', 'angular', 'barnaby'], driver: ['imparable', 'everett'], knock: ['llave', 'maestra', 'knock', 'ignacio'], sacc: ['reves', 'maestro', 'sacc', 'rodolfo'], mayor: ['comandante', 'cinta', 'eleanor', 'jefa'] };
   const ALIAS = Object.keys(people).map(id => [id, ALIASES[id] || norm(people[id].name).replace(/[^a-zñ ]/g, ' ').split(/\s+/).filter(w => w.length >= 3)]);
   const namesIn = text => { const t = ' ' + norm(text).replace(/[^a-zñ ]/g, ' ').replace(/\s+/g, ' ') + ' '; return ALIAS.filter(([, ws]) => ws.some(w => t.includes(' ' + w + ' '))).map(a => a[0]); };
   const short = id => people[id].name;
@@ -357,7 +357,7 @@
     scholar: 'Investiga a fondo cualquier tema que le pidas.', postman: 'Ordena tu bandeja de entrada y tu email (lee tu Gmail y tu calendario, sin poder enviar nada).',
     reporter: 'Vigila y verifica las noticias de IA.', adman: 'Diseña y mide campañas de anuncios en Meta.',
     promoter: 'Hace el marketing de propiedades inmobiliarias.', broker: 'Se ocupa de terrenos y propiedades.',
-    driver: 'Lleva tus mensajes y hace el outreach con otras personas.', mayor: 'Coordina a los directores y reparte tus órdenes.',
+    driver: 'Lleva tus mensajes y hace el outreach con otras personas.', knock: 'Súper vendedor de Knock Knock: busca herramientas y datos del mercado inmobiliario del GAM.', sacc: 'Súper tenista de SACC: estudia los clubes de Costa Rica para dar más valor a las membresías.', mayor: 'Coordina a los directores y reparte tus órdenes.',
   };
   function cardFor(d) {
     if (d.isWorker) { const boss = people[d.director]; return { job: 'Ayuda a ' + boss.name + ' con las tareas que su director le asigna y revisa.', boss: 'Reporta a: ' + boss.name + ' (' + boss.role + ')' }; }

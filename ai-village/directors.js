@@ -3,7 +3,7 @@
 // Solo los directores tienen casa. Los trabajadores (pasantes) todavía no existen en el pueblo.
 // El jefe de gabinete vive en el ayuntamiento. Nombres, personalidades y manías propuestos por Claude y aprobados por el usuario.
 // Hay solo 10 puestos de director: los 9 directores con casa más la jefa de gabinete. Todo agente que se agregue después es un trabajador.
-window.DIRECTOR_SPOTS = 10;
+window.DIRECTOR_SPOTS = 12; // el usuario subió de 10 a 12 puestos al sumar los proyectos Knock Knock y SACC (2026-11-12)
 window.DIRECTORS = [
   {
     id: 'banker', folder: 'banker', house: 1, name: 'Capitán Balance', was: 'Augustus Whitcombe', role: 'Director de Dinero',
@@ -75,5 +75,19 @@ window.DIRECTORS = [
     quirk: 'Lleva una libreta con cintas de colores, una por director, y se acomoda el sombrero de copa cada vez que decide algo.',
     look: 'Mujer alta de pelo negro recogido; levita oscura, sombrero de copa negro y estrella dorada.',
     chief: true,
+  },
+  {
+    id: 'knock', folder: 'knock', house: 11, name: 'Llave Maestra', was: 'Ignacio Barrantes', role: 'Director de Knock Knock (bienes raíces)',
+    hero: 'Llave Maestra', power: { name: 'Puertas Abiertas', text: 'Conocimiento infinito de bienes raíces: busca sin parar herramientas, datos y tendencias del mercado del GAM para que cada venta encuentre su puerta.', color: '216,170,60' }, heroLook: 'Traje color madera y blanco con detalles dorados, capa blanca, una llave dorada gigante a la espalda y una aldaba brillante en el pecho.',
+    personality: 'Súper vendedor: carismático, curioso y directo; siempre sabe algo nuevo del mercado.',
+    quirk: 'Toca dos veces antes de entrar a cualquier lugar ("toc, toc") y gira una llave dorada entre los dedos cuando piensa.',
+    look: 'Hombre de unos 35 años, pelo castaño bien peinado y sonrisa segura; traje color madera con camisa blanca, llave dorada colgada al cuello.',
+  },
+  {
+    id: 'sacc', folder: 'sacc', house: 12, name: 'Maestro Revés', was: 'Rodolfo Zamora', role: 'Director de SACC (club social)',
+    hero: 'Maestro Revés', power: { name: 'Círculo de Confianza', text: 'Conocimiento infinito de clubes sociales: estudia sin parar los clubes de Costa Rica para que cada membresía de SACC valga más.', color: '120,200,90' }, heroLook: 'Traje blanco de tenis con detalles verde cancha y dorado, diadema, capa verde claro, raqueta dorada en la mano y emblema de raqueta y pelota.',
+    personality: 'Elegante, sereno y preciso; mantiene la calma bajo presión y piensa un golpe adelante.',
+    quirk: 'Hace girar su raqueta dorada entre los dedos y repite "un punto a la vez" antes de decidir.',
+    look: 'Hombre de unos 40 años, pelo castaño claro peinado hacia atrás y diadema blanca; ropa de tenis blanca con detalles verdes.',
   },
 ];

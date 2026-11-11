@@ -470,6 +470,8 @@
     const dirId = a.def.isWorker ? a.def.director : a.def.id;
     let side = 'left', row = MEET_ORDER.left.indexOf(dirId);
     if (row < 0) { side = 'right'; row = MEET_ORDER.right.indexOf(dirId); }
+    if (a.def.id === 'knock') return { x: 840, clip: 944, y: 772, face: 'up', noclip: true, meet: true, side: 'left', aisle: 840 }; // silla del pie de la mesa
+    if (a.def.id === 'sacc') return { x: 330, clip: 690, face: 'right', stand: true, meet: true, side: 'left', aisle: 330 };
     if (row < 0) return null;
     const stand = !!a.def.isWorker, ch = MEET_CHAIR[side];
     const x = stand ? WORK_X[side][row] : ch.x[row];
@@ -503,7 +505,8 @@
     return Object.assign({ def: d, sp, mode: 'room', room: String(d.house), seat: null, plans: {}, st: 'seated', timer: agRand(2 + i * 1.5, 14 + i * 3), x: 0, y: 0, rx: 0, ry: 0, face: 'down',
       path: [], rpath: [], walkT: agRand(0, 4), moving: false, blockT: 0, near: false, onArrive: null, onWait: null, goal: null, tail: [], yardUntil: 0, leaveAt: 0, afterLeave: null, active: true }, extra || {});
   };
-  const AGENTS = DIR_DATA.map((d, i) => mkAgent(d, i));
+  const NEW_HEROES = ['knock', 'sacc']; // héroes nuevos: aparecen solos cuando existe su hoja agents/h_<id>.png
+  const AGENTS = DIR_DATA.map((d, i) => NEW_HEROES.includes(d.id) ? mkAgent(d, i, { mode: 'off', active: false }) : mkAgent(d, i));
   const AGENT_BY_HOUSE = {};
   AGENTS.forEach(a => { AGENT_BY_HOUSE[String(a.def.house)] = a; });
   // Trabajadores (chaleco amarillo): solo aparecen cuando existe su hoja de personaje en agents/w_<director>.png

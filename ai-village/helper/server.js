@@ -144,7 +144,7 @@ function appendNote(p, line) {
 
 // ---- respuestas de prueba (sin gastar nada) ----
 const KEYWORDS = { banker: /dinero|banco|gasto|presupuesto|cuenta/i, trader: /trading|mercado|acci[oó]n|bolsa/i, scholar: /investig|estudio|aprender|research/i, postman: /correo|email|bandeja|inbox/i,
-  reporter: /noticia|ia\b|news/i, adman: /anuncio|meta|ads|campa/i, promoter: /marketing inmobiliario|promo/i, broker: /inmobiliaria|terreno|casa|propiedad/i, driver: /outreach|contacto|entrega/i };
+  reporter: /noticia|ia\b|news/i, adman: /anuncio|meta|ads|campa/i, promoter: /marketing inmobiliario|promo/i, broker: /inmobiliaria|terreno|casa|propiedad/i, driver: /outreach|contacto|entrega/i, knock: /vend|bienes ra[ií]ces|gam|mercado inmobiliario/i, sacc: /club|membres|tenis/i };
 function fakeReply(p, message) { return `(modo prueba) Soy ${p.name}. Me dijiste: «${clip(message, 80)}». Con tu plan real te respondería con mi personalidad y mis notas.` + (/pendiente de prueba/i.test(message) ? ` [[NECESITO: un dato de prueba de ${p.role} | es una prueba del modo falso | alta]]` : ''); }
 
 async function talk(p, message, history, plain) {

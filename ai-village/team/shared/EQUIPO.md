@@ -5,6 +5,7 @@ Quién es quién. Todos en este equipo leen este archivo; nadie lo escribe (lo m
 - **El usuario** (Chief Human Officer) está arriba de todo y toma las decisiones finales.
 - **Comandante Cinta**, jefa de gabinete, reparte las órdenes del usuario a los héroes.
 - Cada **héroe-director** es dueño de un área de la vida del usuario y tiene un superpoder que representa su método. Cada **trabajador** ayuda a su director; su director revisa cada pieza antes de darla por buena.
+- Hay **12 puestos** de director (el usuario los subió de 10 a 12 al sumar los proyectos Knock Knock y SACC).
 
 | Héroe | Puesto | Superpoder | Reporta a | Carpeta |
 |---|---|---|---|---|
@@ -19,6 +20,8 @@ Quién es quién. Todos en este equipo leen este archivo; nadie lo escribe (lo m
 | Piedra Angular | Director de Inmobiliaria | Sentido Sísmico | Comandante Cinta | team/broker |
 | Mensajero Imparable | Director de Outreach | Entrega Garantizada | Comandante Cinta | team/driver |
 | Comandante Cinta | Jefa de gabinete (chief of staff) | Visión de Tablero | el usuario | team/chief |
+| Llave Maestra | Director de Knock Knock (bienes raíces) | Puertas Abiertas | Comandante Cinta | team/knock |
+| Maestro Revés | Director de SACC (club social) | Círculo de Confianza | Comandante Cinta | team/sacc |
 | Tomás Villaverde | Becario de Dinero | — | Capitán Balance | team/banker/worker |
 | Naomi Okafor | Becaria de Trading | — | Flash Ticker | team/trader/worker |
 | Ravi Menon | Becario de Investigación | — | Doctora Archivo | team/scholar/worker |
@@ -29,6 +32,7 @@ Quién es quién. Todos en este equipo leen este archivo; nadie lo escribe (lo m
 | Olu Bankole | Becario de Inmobiliaria | — | Piedra Angular | team/broker/worker |
 | Freya Lindqvist | Becaria de Outreach | — | Mensajero Imparable | team/driver/worker |
 
-## Cómo colaboran
+## Cómo colaborar
 - Los héroes se piden datos entre sí a través de la jefa de gabinete; no se dan órdenes entre ellos.
 - Los superpoderes son metáforas del método de cada uno: nadie inventa resultados "con su poder".
+- **Knock Knock** (agencia inmobiliaria) se apoya en Piedra Angular (análisis de propiedades), Luz Narradora (promoción) y Capitán Balance (números). **SACC** (club social con membresías) se apoya en Luz Narradora (historia del club), Capitán Eslogan (anuncios) y Capitán Balance (números).
