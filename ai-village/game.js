@@ -6,7 +6,7 @@
   'use strict';
 
   const T = 16;                 // unidades por cuadro
-  const MW = 40, MH = 30;       // pueblo en cuadros
+  const MW = 40, MH = 36;       // pueblo en cuadros
   const WU = MW * T, HU = MH * T;
   const IW = 15, IH = 11;       // interior en cuadros
   const IWU = IW * T, IHU = IH * T;
@@ -58,7 +58,7 @@
 
   // ---------- plano del pueblo ----------
   const HALL = { x: 16, y: 1, w: 8, h: 6, doors: [[19, 6], [20, 6]] };
-  const HOUSE_POS = [[9, 2], [26, 2], [4, 6], [4, 13], [4, 20], [31, 6], [31, 13], [31, 20], [12, 21], [23, 21]];
+  const HOUSE_POS = [[9, 2], [26, 2], [4, 6], [4, 13], [4, 20], [31, 6], [31, 13], [31, 20], [12, 21], [23, 21], [6, 27], [29, 27]]; // las dos últimas: Knock Knock y SACC
   const HOUSES = HOUSE_POS.map(([x, y], i) => ({ id: i + 1, x, y, w: 5, h: 4, door: [x + 2, y + 3] }));
   HOUSES[9] = { id: 10, x: 21, y: 20, w: 7, h: 5, door: [24, 24] }; // la mansión del director es más grande
 
@@ -69,13 +69,15 @@
   const vline = (x, y1, y2) => { for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) setP(x, y); };
 
   for (let y = 10; y <= 18; y++) for (let x = 14; x <= 25; x++) kind[y][x] = 2;
-  vline(19, 7, 27); vline(20, 7, 27);
+  vline(19, 7, 32); vline(20, 7, 32);
   hline(7, 11, 28);
   hline(25, 6, 33);
+  hline(32, 6, 33);
   HOUSES.forEach(h => {
     const [dx, dy] = h.door;
     if (h.id === 1 || h.id === 2) { vline(dx, dy + 1, 7); return; }
-    if (h.id >= 9) { vline(dx, dy + 1, 25); return; }
+    if (h.id === 9 || h.id === 10) { vline(dx, dy + 1, 25); return; }
+    if (h.id >= 11) { vline(dx, dy + 1, 32); return; }
     vline(dx, dy + 1, dy + 2);
     if (dx < 20) hline(dy + 2, dx, 14); else hline(dy + 2, dx, 25);
   });
@@ -88,7 +90,7 @@
   HALL.doors.forEach(([x, y]) => { solid[y][x] = false; });
   rectSolid(19, 13, 2, 2);
 
-  const plazaProps = [['barrel', 15, 11], ['barrel', 24, 11], ['barrel', 15, 17], ['barrel', 24, 17], ['crate', 16, 17], ['crate', 23, 11]]
+  const plazaProps = [['planter', 15, 11], ['planter', 24, 11], ['planter', 15, 17], ['planter', 24, 17], ['planter', 16, 17], ['planter', 23, 11]]
     .map(([t, x, y]) => ({ t, x, y }));
   plazaProps.forEach(p => { solid[p.y][p.x] = true; });
 
@@ -114,15 +116,15 @@
       const edge = Math.min(tx, ty, MW - 1 - tx, MH - 1 - ty);
       if (edge > 5 && r() < 0.5) continue;
       const q = r();
-      const t = q < 0.32 ? 'cactus' : q < 0.55 ? 'tree' : q < 0.8 ? 'rock' : q < 0.9 ? 'hay' : 'tuft';
+      const t = q < 0.5 ? 'tree' : q < 0.78 ? 'bush' : q < 0.92 ? 'flowers' : 'rock';
       decor.push({ t, x: tx, y: ty, v: Math.floor(r() * 1000) });
-      if (t === 'cactus' || t === 'tree' || t === 'hay') solid[ty][tx] = true;
+      if (t === 'tree' || t === 'bush') solid[ty][tx] = true;
     }
   }
 
   // ---------- datos del suelo (se calculan una sola vez) ----------
-  const SAND = ['#d4b283', '#d1af7f', '#d7b687'];
-  const SPECKS = ['#c29a69', '#e2c898', '#b98f5e', '#ecd5a6', '#977245', '#c9a673', '#86633a'];
+  const SAND = ['#8cc56a', '#88c166', '#90c96e']; // pasto
+  const SPECKS = ['#6fae52', '#a5d87f', '#7fbd5e', '#b8e690', '#aeb5ba', '#dfe4e7', '#bcc3c7'];
   const tileBase = new Array(MW * MH);
   const tileSpecks = new Array(MW * MH);
   const cracks = [], edgeDots = [], ruts = [], looseTufts = [], blobs = [];
@@ -130,21 +132,18 @@
     const g = rng(99);
     for (let ty = 0; ty < MH; ty++) for (let tx = 0; tx < MW; tx++) {
       const k = kind[ty][tx], i = ty * MW + tx, sp = [];
-      g(); tileBase[i] = k === 0 ? SAND[0] : (k === 2 ? '#bb9461' : '#b08a58');
+      g(); tileBase[i] = k === 0 ? SAND[(tx * 7 + ty * 3) % 3] : (k === 2 ? ((tx + ty) % 2 ? '#e8e3d6' : '#ddd8ca') : '#cfd4d8');
       const n = k === 0 ? 10 : 8;
       for (let j = 0; j < n; j++) {
         sp.push([tx * T + g() * 15, ty * T + g() * 15, 0.5 + g() * 1.5, 0.4 + g() * 0.7, k === 0 ? Math.floor(g() * 4) : 4 + Math.floor(g() * 3)]);
       }
       tileSpecks[i] = sp;
-      if (k === 0 && g() < 0.1) {
-        const x0 = tx * T + 2 + g() * 8, y0 = ty * T + 2 + g() * 8;
-        cracks.push([x0, y0, x0 + 3 + g() * 3, y0 + 1 + g() * 2, x0 + 5 + g() * 4, y0 + g() * 3, x0 + 8 + g() * 3, y0 + 2 + g() * 3]);
-      }
+
     }
     for (let ty = 0; ty < MH; ty++) for (let tx = 0; tx < MW; tx++) {
       const k = kind[ty][tx]; if (!k) continue;
       const other = (dx, dy) => { const n = kind[ty + dy]?.[tx + dx]; return n === undefined ? false : (k === 2 ? n !== 2 : n === 0); };
-      const col = k === 2 ? '#8d8780' : '#8c6a40';
+      const col = k === 2 ? '#a9b0b5' : '#97a0a6';
       const x = tx * T, y = ty * T;
       for (let i = 1; i < T; i += 2.7) {
         const j = g() * 1.2;
@@ -154,13 +153,11 @@
         if (other(1, 0)) edgeDots.push([x + T - 1.4 - j, y + i, 1.2, 1.5, col]);
       }
     }
-    for (let y = 7 * T + 4; y < 27 * T; y += 7 + g() * 6) { // huellas de carreta en la calle principal
-      if (kind[Math.floor(y / T)][19] === 1) { ruts.push([19 * T + 5, y, 1.1, 5 + g() * 3]); ruts.push([20 * T + 10, y + 2, 1.1, 5 + g() * 3]); }
-    }
+
     const g3 = rng(321); // manchas suaves de color en el suelo (sin cuadrícula visible)
     for (let i = 0; i < 260; i++) {
       const lightB = g3() < 0.5;
-      blobs.push([g3() * WU, g3() * HU, 14 + g3() * 34, 8 + g3() * 22, g3() * 3.1416, lightB ? 'rgba(255,236,190,.075)' : 'rgba(150,100,50,.06)']);
+      blobs.push([g3() * WU, g3() * HU, 14 + g3() * 34, 8 + g3() * 22, g3() * 3.1416, lightB ? 'rgba(255,255,215,.08)' : 'rgba(30,90,40,.07)']);
     }
     const g2 = rng(5);
     for (let i = 0; i < 200; i++) {
@@ -178,6 +175,9 @@
       c.fillStyle = tileBase[i];
       c.fillRect(tx * T - 0.03, ty * T - 0.03, T + 0.06, T + 0.06);
     }
+    c.strokeStyle = 'rgba(70,85,95,.17)'; c.lineWidth = 0.3; c.beginPath();
+    for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) if (kind[ty][tx]) c.rect(tx * T + 0.15, ty * T + 0.15, T - 0.3, T - 0.3);
+    c.stroke();
     c.save(); c.beginPath(); c.rect(0, 0, WU, HU); c.clip();
     for (const b of blobs) { // manchas suaves, solo sobre la arena
       if (b[0] < L - 40 || b[0] > Rt + 40 || b[1] < Tp - 40 || b[1] > B + 40) continue;
@@ -207,7 +207,7 @@
       if (d[0] < L - 4 || d[0] > Rt + 4 || d[1] < Tp - 4 || d[1] > B + 4) continue;
       c.fillStyle = d[4]; c.fillRect(d[0], d[1], d[2], d[3]);
     }
-    c.fillStyle = '#8f8a4e'; c.beginPath();
+    c.fillStyle = '#5f9f48'; c.beginPath();
     for (const [x, y] of looseTufts) {
       if (x < L - 6 || x > Rt + 6 || y < Tp - 6 || y > B + 6) continue;
       c.rect(x + 3, y + 3, 0.5, 2.6); c.rect(x + 1.8, y + 3.8, 0.5, 1.8); c.rect(x + 4.4, y + 3.9, 0.5, 1.7);
@@ -285,12 +285,38 @@
         const c2 = c2c.getContext('2d'); c2.imageSmoothingQuality = 'high'; c2.drawImage(cur, 0, 0, c2c.width, c2c.height);
         def.levels.push(c2c); cur = c2c;
       }
+      if (def.onload) def.onload(img);
       def.ready = true;
     };
     img.onerror = () => { if (def.fallback && def.file !== def.fallback) { def.file = def.fallback; loadSpriteFile(def, minW); } };
     img.src = def.file;
   }
   for (const key in SPRITES) loadSpriteFile(SPRITES[key]);
+  // ---- villa moderna: la casa de cada héroe (lienzo completo con fondo transparente) ----
+  const MKEY = { 1: 'banco', 2: 'bolsa', 3: 'archivo', 4: 'correo', 5: 'gaceta', 6: 'metaads', 7: 'promotora', 8: 'tierras', 9: 'express', 10: 'mansion', 11: 'knock', 12: 'sacc' };
+  const MNAME = { banco: 'CAPITÁN BALANCE', bolsa: 'FLASH TICKER', archivo: 'DOCTORA ARCHIVO', correo: 'CARTERO RELÁMPAGO', gaceta: 'DETECTORA FUENTE', metaads: 'CAPITÁN ESLOGAN', promotora: 'LUZ NARRADORA', tierras: 'PIEDRA ANGULAR', express: 'MENSAJERO IMPARABLE', mansion: 'CAPITÁN HUMANO', hall: 'COMANDANTE CINTA', knock: 'KNOCK KNOCK', sacc: 'SACC' };
+  // cartel en blanco de cada casa, como fracción del lienzo: [x, y, ancho, alto]
+  const MPLATE = {
+    banco: [.425, .671, .155, .054], bolsa: [.437, .718, .12, .04], archivo: [.408, .629, .184, .054], correo: [.395, .64, .21, .058], gaceta: [.413, .671, .174, .047],
+    metaads: [.417, .623, .166, .062], promotora: [.417, .646, .166, .054], tierras: [.408, .621, .184, .066], express: [.417, .629, .166, .063], mansion: [.417, .623, .166, .058],
+    hall: [.408, .623, .184, .058], knock: [.40, .648, .2, .058], sacc: [.40, .605, .2, .065],
+  };
+  const MWIDTH = { hall: 140, mansion: 118 };
+  function plateColor(img, r) { // texto oscuro sobre cartel claro y al revés
+    try {
+      const cv2 = document.createElement('canvas'); cv2.width = Math.max(1, Math.round(r[2])); cv2.height = Math.max(1, Math.round(r[3]));
+      const x2 = cv2.getContext('2d'); x2.drawImage(img, r[0], r[1], r[2], r[3], 0, 0, cv2.width, cv2.height);
+      const d = x2.getImageData(0, 0, cv2.width, cv2.height).data; let sum = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) { sum += 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2]; n++; }
+      return sum / n > 150 ? '#1a2a2e' : '#f4f1e6';
+    } catch (e) { return '#1a2a2e'; }
+  }
+  const MSPR = {};
+  Object.keys(MNAME).forEach(k => {
+    const def = { file: `sprites/m_${k}.png`, name: MNAME[k], width: MWIDTH[k] || 94, lights: [], modern: true };
+    def.onload = img => { def.w = img.width; def.h = img.height; const f = MPLATE[k]; def.plate = [f[0] * img.width, f[1] * img.height, f[2] * img.width, f[3] * img.height]; def.tcol = plateColor(img, def.plate); };
+    MSPR[k] = def; loadSpriteFile(def);
+  });
   function spritePlace(def, fx, fy, fw, fh) {
     const s = def.width / def.w;
     return { x: fx + fw / 2 - def.width / 2, y: fy + fh + 3 - def.h * s, w: def.width, h: def.h * s, s };
@@ -299,7 +325,8 @@
     const devW = p.w * scaleOf() * dpr;
     let lv = def.levels[0];
     for (const L of def.levels) if (L.width >= devW) lv = L;
-    E(c, 'rgba(40,24,10,.30)', p.x + p.w / 2, p.y + p.h - 1, p.w * 0.46, 3.2);
+    if (def.modern) E(c, 'rgba(25,55,30,.20)', p.x + p.w / 2, p.y + p.h - 1.5, p.w * 0.33, 2.4);
+    else E(c, 'rgba(40,24,10,.30)', p.x + p.w / 2, p.y + p.h - 1, p.w * 0.46, 3.2);
     c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
     c.drawImage(lv, p.x, p.y, p.w, p.h);
     const [qx, qy, qw, qh] = def.plate, cx = p.x + (qx + qw / 2) * p.s, cy = p.y + (qy + qh / 2) * p.s;
@@ -311,18 +338,24 @@
     (def.lights || []).forEach(([lx, ly], i) => glow(c, p.x + lx * p.s, p.y + ly * p.s, 11, '255,190,80', 0.26 * (0.85 + 0.15 * Math.sin(t * 7 + seed + i * 2))));
   }
   function drawSpriteFor(c, h, t) {
+    const mk = MKEY[h.id], md = mk && MSPR[mk];
+    if (md && md.ready) { drawSprite(c, md, spritePlace(md, h.x * T, h.y * T, h.w * T, h.h * T), t, h.id); return true; }
     const key = SPRITE_FOR[h.id], def = key && SPRITES[key];
     if (!def || !def.ready) return false;
     drawSprite(c, def, spritePlace(def, h.x * T, h.y * T, h.w * T, h.h * T), t, h.id);
     return true;
   }
   function drawHallSprite(c, t) {
+    const md = MSPR.hall;
+    if (md.ready) { drawSprite(c, md, spritePlace(md, HALL.x * T, HALL.y * T, HALL.w * T, HALL.h * T), t, 1); return true; }
     const def = SPRITES.hall;
     if (!def.ready) return false;
     drawSprite(c, def, spritePlace(def, HALL.x * T, HALL.y * T, HALL.w * T, HALL.h * T), t, 1);
     return true;
   }
-  function hallAnchor() { // de dónde salen los cables del telégrafo
+  function hallAnchor() { // de dónde salen las líneas de datos hacia cada casa
+    const md = MSPR.hall;
+    if (md.ready) { const p = spritePlace(md, HALL.x * T, HALL.y * T, HALL.w * T, HALL.h * T); return [p.x + p.w / 2, p.y + p.h * 0.2]; }
     const def = SPRITES.hall;
     if (def.ready) { const p = spritePlace(def, HALL.x * T, HALL.y * T, HALL.w * T, HALL.h * T); return [p.x + def.pole[0] * p.s, p.y + def.pole[1] * p.s]; }
     return [HALL.x * T + 25, HALL.y * T + 8];
@@ -375,6 +408,7 @@
   {
     const occ = new Set();
     for (const [name, tx, ty, fw] of PROP_PLACE) {
+      if (/^(barrel|crate|fence|vending)/.test(name)) continue; // objetos del Lejano Oeste: ya no van
       let ok = ty >= 0 && ty < MH && tx >= 0 && tx + fw <= MW;
       for (let x = tx; ok && x < tx + fw; x++) if (kind[ty][x] === 1 || solid[ty][x] || inYard(x, ty) || occ.has(x + ',' + ty)) ok = false;
       if (!ok) continue;
@@ -384,7 +418,7 @@
     for (let i = decor.length - 1; i >= 0; i--) { // quitar cactus, árboles o rocas que quedarían encima
       const d = decor[i];
       if (placedProps.some(p => d.x >= p.tx - 1 && d.x <= p.tx + p.fw && d.y >= p.ty - 1 && d.y <= p.ty + 1)) {
-        if (d.t === 'cactus' || d.t === 'tree' || d.t === 'hay') solid[d.y][d.x] = false;
+        if (d.t === 'tree' || d.t === 'bush') solid[d.y][d.x] = false;
         decor.splice(i, 1);
       }
     }
@@ -797,6 +831,8 @@
     7: { name: 'PROMOTORA', title: 'Promotora · Marketing inmobiliario', roof: '#a0522d', wall: '#c9b38a', style: 'planks', chimney: false, sign: ['#a8322a', '#f4ecd8', '#f4ecd8'] },
     8: { name: 'TIERRAS', title: 'Oficina de tierras · Inmobiliaria', roof: '#4a3a30', wall: '#9a5a42', style: 'brick', chimney: false, sign: ['#2a3a2a', '#e8c860', '#8a6a3a'] },
     9: { name: 'EXPRESS', title: 'Express · Outreach', roof: '#6a2e22', wall: '#b08a3a', style: 'planks', chimney: false, sign: ['#2a1c10', '#f0d890', '#b8442c'] },
+    11: { name: 'KNOCK KNOCK', title: 'Knock Knock · Bienes raíces', roof: '#3f6f5a', wall: '#8a6a44', style: 'planks', chimney: false, sign: ['#1c2c24', '#e8c860', '#d8b04a'] },
+    12: { name: 'SACC', title: 'SACC · Club social', roof: '#2f7a4a', wall: '#e8e4d4', style: 'planks', chimney: false, sign: ['#16342a', '#f4ecd8', '#d8b04a'] },
     10: { name: 'DIRECTOR', title: 'Casa del Director', roof: '#3a2418', wall: '#5a3a22', style: 'planks', chimney: true, sign: ['#1c1008', '#e8c060', '#d8b04a'] },
   };
 
@@ -1348,12 +1384,12 @@
   // cables del telégrafo: el jefe de gabinete está conectado con todos los agentes
   function drawWires(c, t) {
     const [ax, ay] = hallAnchor();
-    c.strokeStyle = 'rgba(42,28,16,.34)'; c.lineWidth = 0.3;
+    c.strokeStyle = 'rgba(70,170,210,.30)'; c.lineWidth = 0.3;
     HOUSES.forEach(h => {
       const bx = h.x * T + h.w * T / 2, by = h.y * T + 8;
       const mx = (ax + bx) / 2, my = (ay + by) / 2 + 10 + Math.hypot(bx - ax, by - ay) * 0.07;
       c.beginPath(); c.moveTo(ax, ay); c.quadraticCurveTo(mx, my, bx, by); c.stroke();
-      E(c, '#7acfc0', bx, by, 0.8, 0.8);
+      E(c, '#7be8ff', bx, by, 0.8, 0.8);
       for (let k = 0; k < 2; k++) {
         const u = (t * 0.22 + h.id * 0.137 + k * 0.5) % 1, v = 1 - u;
         glow(c, v * v * ax + 2 * v * u * mx + u * u * bx, v * v * ay + 2 * v * u * my + u * u * by, 4, k ? '255,224,138' : '120,230,255', 0.42);
@@ -1401,6 +1437,55 @@
     for (let i = 0; i < 12; i++) R(c, dk, cx - 2 + (i * 3 % 4), by - 1 - i, 0.4, 0.9);
     const lc = (v % 2) ? '#8a8a45' : '#7a7a3a';
     [[-9.6, -24], [7.4, -23.6], [-3.2, -23.2], [-8.6, -19.6], [9.4, -22]].forEach(([dx, dy], i) => E(c, i % 2 ? lc : '#9a9a50', cx + dx, by + dy, 2.2, 1.6));
+  }
+  function drawTreeM(c, cx, by, v) { // árbol frondoso
+    shadow(c, cx, by, 8, 2.4);
+    R(c, '#7a5a3a', cx - 1.6, by - 10, 3.2, 10); R(c, '#5e432a', cx + 0.4, by - 10, 1.2, 10);
+    const a = ['#3f8a3c', '#3a8546', '#48903a'][v % 3], b = ['#4fa84a', '#4aa356', '#58ad48'][v % 3];
+    E(c, a, cx, by - 15, 8.6, 7); E(c, b, cx - 3, by - 17.6, 5.6, 5); E(c, '#66c05a', cx + 3, by - 18.4, 4.6, 4.2);
+    E(c, '#8be07a', cx - 3.4, by - 20, 1.7, 1.1); E(c, 'rgba(0,0,0,.14)', cx + 4, by - 11.6, 4.4, 2.2);
+  }
+  function drawBushM(c, cx, by, v) {
+    shadow(c, cx, by, 6.8, 2);
+    E(c, '#3a8a40', cx, by - 4, 6.6, 4.2); E(c, '#52ab4e', cx - 2, by - 5.6, 4, 3); E(c, '#6fc765', cx + 2, by - 5, 3, 2.4);
+    if (v % 3 === 0) { R(c, '#ff7aa8', cx - 3, by - 6, 1.1, 1.1); R(c, '#ffd45a', cx + 2.4, by - 7, 1.1, 1.1); R(c, '#ffffff', cx, by - 4.6, 1, 1); }
+  }
+  function drawFlowersM(c, x, y, v) {
+    const cols = ['#ff7aa8', '#ffd45a', '#ffffff', '#9a7aff', '#ff9a4a'];
+    for (let i = 0; i < 9; i++) {
+      const fx = x + 2 + (i * 5 + v) % 11, fy = y + 5 + (i * 7 + v) % 8;
+      R(c, '#4f9a44', fx + 0.4, fy + 1, 0.4, 1.6); R(c, cols[(i + v) % cols.length], fx, fy, 1.3, 1.3);
+    }
+  }
+  function drawPlanterM(c, cx, by) { // macetero de concreto con plantas
+    shadow(c, cx, by, 7, 2);
+    R(c, '#c9cfd2', cx - 6, by - 6.5, 12, 6.5); R(c, '#aeb5ba', cx - 6, by - 1.4, 12, 1.4); R(c, '#e1e6e8', cx - 6, by - 6.5, 12, 1);
+    E(c, '#3f8a3c', cx, by - 9, 6.4, 4.2); E(c, '#6fc765', cx - 1.6, by - 10.4, 3.6, 2.6);
+    R(c, '#ff7aa8', cx + 2, by - 10, 1.1, 1.1); R(c, '#ffd45a', cx - 3, by - 9, 1.1, 1.1);
+  }
+  function drawFountainM(c, t) { // fuente moderna de la plaza
+    const cx = 20 * T, cy = 14 * T + 5;
+    E(c, 'rgba(0,0,0,.16)', cx, cy + 8, 21, 10);
+    E(c, '#aab3b9', cx, cy + 4, 19, 10.5); E(c, '#e6ebee', cx, cy + 2.4, 19, 10.5);
+    E(c, '#6bc7e6', cx, cy + 2.8, 16, 8.4); E(c, '#8fdcf2', cx, cy + 2.2, 12.5, 6.2);
+    c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 0.3;
+    for (let i = 0; i < 3; i++) { const ph = (t * 0.5 + i / 3) % 1; c.globalAlpha = 1 - ph; c.beginPath(); c.ellipse(cx, cy + 2.6, 3 + ph * 11, 1.4 + ph * 5.4, 0, 0, 6.2832); c.stroke(); }
+    c.globalAlpha = 1;
+    R(c, '#d4dadd', cx - 2, cy - 12, 4, 15); R(c, '#aab3b9', cx + 0.8, cy - 12, 1.2, 15); E(c, '#e6ebee', cx, cy - 12, 3.4, 1.5);
+    for (let i = 0; i < 5; i++) for (let k = 0; k < 5; k++) {
+      const u = (t * 1.2 + k / 5 + i * 0.13) % 1, ang = (i - 2) * 0.45;
+      E(c, 'rgba(215,242,255,.9)', cx + Math.sin(ang) * 11 * u, cy - 12 + (-9 * u + 12.5 * u * u), 0.8, 0.8);
+    }
+    glow(c, cx, cy - 4, 16, '140,220,255', 0.16);
+  }
+  function drawMonorail(c, t) { // línea de monorriel al fondo del pueblo
+    R(c, '#b9c2c7', 0, 5, WU, 2.4); R(c, '#8a959c', 0, 7.2, WU, 0.8);
+    for (let x = 10; x < WU; x += 52) { R(c, '#a8b2b8', x, 8, 2.2, 5); R(c, '#8a959c', x + 1.2, 8, 1, 5); }
+    const x = ((t * 24) % (WU + 160)) - 80;
+    R(c, '#f4f7f8', x, -1, 44, 6); R(c, '#3a9bd8', x, 3.2, 44, 1.2);
+    for (let i = 0; i < 6; i++) R(c, '#6fb7e0', x + 3 + i * 6.6, 0, 4.4, 2.2);
+    PG(c, '#f4f7f8', [x + 44, -1, x + 50, 2, x + 44, 5]);
+    glow(c, x + 48, 3, 6, '255,255,220', 0.35);
   }
   function drawBarrel(c, cx, by) {
     shadow(c, cx, by, 6.5, 2);
@@ -1789,11 +1874,11 @@
     for (const s of ['world', 'interior']) { views[s].rel = Math.max(minRel(s), Math.min(MAXREL, views[s].rel)); clampCam(s); }
     makeVignette();
   }
-  let vignette = null;
+  let vignette = null, vignetteW = null;
   function makeVignette() {
     const w = cv.width, h = cv.height;
-    vignette = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.45, w / 2, h / 2, Math.max(w, h) * 0.75);
-    vignette.addColorStop(0, 'rgba(0,0,0,0)'); vignette.addColorStop(1, 'rgba(30,14,2,.5)');
+    const mk = col => { const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.45, w / 2, h / 2, Math.max(w, h) * 0.75); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, col); return g; };
+    vignette = mk('rgba(30,14,2,.5)'); vignetteW = mk('rgba(10,24,34,.30)');
   }
 
   // ---------- llamar a alguien: "ven aquí", llamada de la jefa de gabinete y "vuelve al trabajo" ----------
@@ -2044,11 +2129,12 @@
 
   // ---------- dibujo de cada cuadro ----------
   function drawWorld(c, t, L, Tp, Rt, B) {
-    R(c, '#d4b283', 0, 0, WU, HU);
+    R(c, '#8cc56a', 0, 0, WU, HU);
     drawGround(c, L, Tp, Rt, B);
+    drawMonorail(c, t);
     decor.forEach(d => {
       if (d.t === 'rock') drawRock(c, d.x * T, d.y * T, d.v);
-      else if (d.t === 'tuft') drawTuft(c, d.x * T, d.y * T);
+      else if (d.t === 'flowers') drawFlowersM(c, d.x * T, d.y * T, d.v);
     });
     HOUSES.forEach(h => { if (h.x * T < Rt + 20 && (h.x + h.w) * T > L - 20 && h.y * T < B + 30 && (h.y + h.h) * T > Tp - 30) drawHouse(c, h, t); });
     drawHall(c, t);
@@ -2056,21 +2142,16 @@
     const objs = [];
     decor.forEach(d => {
       const cx = d.x * T + 8, by = d.y * T + 14;
-      if (d.t === 'cactus') objs.push({ y: by, f: () => drawCactus(c, cx, by, d.v) });
-      else if (d.t === 'tree') objs.push({ y: by, f: () => drawTree(c, cx, by, d.v) });
-      else if (d.t === 'hay') objs.push({ y: by, f: () => drawHay(c, cx, by) });
+      if (d.t === 'tree') objs.push({ y: by, f: () => drawTreeM(c, cx, by, d.v) });
+      else if (d.t === 'bush') objs.push({ y: by, f: () => drawBushM(c, cx, by, d.v) });
     });
     plazaProps.forEach((p, i) => objs.push({
       y: p.y * T + 14,
-      f: () => {
-        const name = p.t === 'barrel' ? ['barrel1', 'barrel2', 'barrel4', 'barrel1'][i % 4] : ['crate1', 'crate2'][i % 2];
-        if (PROPS[name].ready) drawPropAt(c, { name, cx: p.x * T + 8, base: p.y * T + 15 }, t);
-        else (p.t === 'barrel' ? drawBarrel : drawCrate)(c, p.x * T + 8, p.y * T + 14);
-      },
+      f: () => drawPlanterM(c, p.x * T + 8, p.y * T + 14),
     }));
     placedProps.forEach(p => objs.push({ y: p.base, f: () => drawPropAt(c, p, t) }));
     AGENTS.forEach(a => { if (a.active && a.mode === 'world') objs.push({ y: a.y, f: () => { drawAgentAt(c, a, a.x, a.y, a.face, a.moving); if (a.near) drawAgentLabel(c, a, a.x, a.y); } }); });
-    objs.push({ y: 15 * T, f: () => drawFountain(c, t) });
+    objs.push({ y: 15 * T, f: () => drawFountainM(c, t) });
     objs.push({ y: py, f: () => drawPlayer(c, px, py, t, moving, face) });
     objs.sort((a, b) => a.y - b.y).forEach(o => { if (o.y > Tp - 6 && o.y < B + 40) o.f(); });
   }
@@ -2092,14 +2173,14 @@
       }
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = 'rgba(200,120,40,.10)'; ctx.fillRect(0, 0, cv.width, cv.height);
-    ctx.fillStyle = vignette; ctx.fillRect(0, 0, cv.width, cv.height);
+    if (scene !== 'world') { ctx.fillStyle = 'rgba(200,120,40,.10)'; ctx.fillRect(0, 0, cv.width, cv.height); }
+    ctx.fillStyle = scene === 'world' ? vignetteW : vignette; ctx.fillRect(0, 0, cv.width, cv.height);
     if (fade > 0) { ctx.fillStyle = `rgba(0,0,0,${Math.min(1, fade)})`; ctx.fillRect(0, 0, cv.width, cv.height); }
   }
 
   let lastHud = '';
   function updateHud() {
-    const place = scene === 'world' ? 'Pueblo del Oeste' : curInterior.title;
+    const place = scene === 'world' ? 'Villa de Héroes' : curInterior.title;
     const txt = `${place} · zoom ${Math.round(curView().rel * 100)}%`;
     if (txt !== lastHud) { hudEl.textContent = txt; lastHud = txt; }
   }
