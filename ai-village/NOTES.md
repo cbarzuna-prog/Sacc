@@ -158,3 +158,4 @@ Pendiente (arte, necesita el sí del usuario antes de generar): hojas de caminat
 - 12 puestos de director (antes 10, decisión del usuario). Carpetas `team/knock` y `team/sacc` (CLAUDE.md y notes.md), con internet (fuente y fecha) y reglas duras como los demás. Sin trabajador todavía.
 - En el juego aparecen solos cuando existan `agents/h_knock.png` y `agents/h_sacc.png`; en la reunión Llave Maestra se sienta en la silla del pie y Maestro Revés se queda de pie junto a la pared izquierda.
 - Pendiente: hojas de personaje (ChatGPT) de ambos.
+- Llegaron dos hojas de **poses** (12 poses por héroe, no son hojas de caminata): `agents/poses/knock_poses.jpg` y `agents/poses/sacc_poses.jpg`. Sirven como referencia de cara y traje y quizá para retratos; para el pueblo hacen falta las hojas de caminata (4 filas: frente, derecha, izquierda, espaldas × 3 pasos).
