@@ -454,24 +454,26 @@
   // Silla de cada escritorio, en píxeles de la imagen de 1680x944: x = centro de la silla, clip = borde de arriba del escritorio.
   // Sentado, se dibuja solo lo que queda por encima de ese borde, así las piernas quedan tapadas por el mueble.
   const SEATS = {
-    1: { x: 300, clip: 368 }, 2: { x: 1301, clip: 336 }, 3: { x: 403, clip: 453 }, 4: { x: 1300, clip: 252 },
-    5: { x: 306, clip: 497 }, 6: { x: 1311, clip: 374 }, 7: { x: 359, clip: 376 }, 8: { x: 1216, clip: 432 },
-    9: { x: 308, clip: 333 }, hall: { x: 712, clip: 372, face: 'right', aisle: 640 },
+    1: { x: 840, clip: 440 }, 2: { x: 840, clip: 345 }, 3: { x: 840, clip: 395 },
+    4: { x: 840, clip: 944, y: 600, face: 'up', noclip: true }, 5: { x: 840, clip: 330 }, 6: { x: 840, clip: 490 }, 7: { x: 840, clip: 305 }, 8: { x: 840, clip: 345 }, 9: { x: 840, clip: 330 }, 10: { x: 840, clip: 362 }, 11: { x: 840, clip: 285 }, 12: { x: 840, clip: 252 }, hall: { x: 650, clip: 305, face: 'right', aisle: 500, side: 'left' },
   };
   // ---- reunión en el ayuntamiento (medidas en píxeles de la imagen de 1680x944) ----
   const MEET = { on: false, stagger: 0, userGoing: false, userSeated: false, userLeaving: false };
-  const MEET_Y = [345, 433, 513, 597, 682];                   // centro de cada silla de los lados
   const MEET_ORDER = { left: ['mayor', 'banker', 'scholar', 'postman', 'reporter'], right: ['trader', 'adman', 'promoter', 'broker', 'driver'] };
-  const MEET_X = { left: 712, right: 984 }, AISLE_X = { left: 640, right: 1056 }, WALL_X = { left: 300, right: 1380 };
-  const WALK_Y = 850;                                         // pasillo libre entre la puerta y la mesa
-  const HEAD = { x: 840, clip: 275, restY: 232 };            // silla de la cabecera: la tuya
+  // sillas de la mesa nueva (píxeles de la imagen 1680x944): x del centro de cada silla y la línea donde se corta el cuerpo (el asiento)
+  const MEET_CHAIR = { left: { x: [650, 640, 630, 622, 612], clip: [305, 370, 440, 520, 600] }, right: { x: [1025, 1035, 1045, 1050, 1060], clip: [310, 375, 440, 510, 590] } };
+  const WORK_X = { left: [440, 380, 320, 280, 250], right: [1240, 1300, 1360, 1400, 1430] }; // los trabajadores, de pie junto a la pared de su lado
+  const AISLE_X = { left: 500, right: 1180 };
+  const WALK_Y = 792, WALK_TURN = { left: 700, right: 975 };  // pasillo de abajo y punto donde se desvían de la puerta
+  const HEAD = { x: 840, clip: 222, restY: 200 };            // silla de la cabecera: la tuya
   function meetSeatFor(a) {
     const dirId = a.def.isWorker ? a.def.director : a.def.id;
     let side = 'left', row = MEET_ORDER.left.indexOf(dirId);
     if (row < 0) { side = 'right'; row = MEET_ORDER.right.indexOf(dirId); }
     if (row < 0) return null;
-    const stand = !!a.def.isWorker;
-    return { x: stand ? WALL_X[side] : MEET_X[side], clip: MEET_Y[row] + 27, face: side === 'left' ? 'right' : 'left', stand, meet: true, aisle: stand ? WALL_X[side] : AISLE_X[side] };
+    const stand = !!a.def.isWorker, ch = MEET_CHAIR[side];
+    const x = stand ? WORK_X[side][row] : ch.x[row];
+    return { x, clip: ch.clip[row], face: side === 'left' ? 'right' : 'left', stand, meet: true, side, aisle: stand ? x : AISLE_X[side] };
   }
   const DIR_DATA = (window.DIRECTORS && window.DIRECTORS.length) ? window.DIRECTORS : [
     { id: 'banker', house: 1 }, { id: 'trader', house: 2 }, { id: 'scholar', house: 3 }, { id: 'postman', house: 4 }, { id: 'reporter', house: 5 },
@@ -480,7 +482,7 @@
   const agRng = rng(20241103);
   const agRand = (a, b) => a + agRng() * (b - a);
   const agSeat = a => a.seat || SEATS[String(a.def.house)];
-  const agSeatPos = a => { const s = agSeat(a); return [s.x * ROOMK, s.clip * ROOMK + 9]; };
+  const agSeatPos = a => { const s = agSeat(a); return [s.x * ROOMK, s.y !== undefined ? s.y * ROOMK : s.clip * ROOMK + 9]; };
   const agDoor = a => (a.def.house === 'hall' ? HALL.doors[0] : HOUSES[a.def.house - 1].door);
   function agYard(a) { // el jardín propio: la franja de terreno delante de su casa
     if (a.def.house === 'hall') return { x0: 14, x1: 25, y0: 7, y1: 9 };
@@ -571,12 +573,12 @@
   function agRoomPlan(a) { // de la puerta al asiento (escritorio, o silla de la mesa en el ayuntamiento)
     const s = agSeat(a), key = a.room + '|' + s.x + '|' + s.clip;
     if (a.plans[key]) return a.plans[key];
-    const d = ROOM_DEFS[a.room], doorX = (d.door[0] + d.door[1]) / 2;
+    const d = ROOM_DEFS[a.room], doorX = d.spawn !== undefined ? d.spawn : (d.door[0] + d.door[1]) / 2;
     const [seatX, seatY] = agSeatPos(a);
     let pts;
     if (s.aisle) { // ayuntamiento: por el pasillo de abajo y subiendo por el lado de su silla
-      const wy = WALK_Y * ROOMK, ax = s.aisle * ROOMK;
-      pts = [[doorX, d.floor[3] + 3], [doorX, wy], [ax, wy], [ax, seatY], [seatX, seatY]];
+      const wy = WALK_Y * ROOMK, ax = s.aisle * ROOMK, side = s.side || (s.x < 840 ? 'left' : 'right');
+      pts = [[doorX, d.floor[3] + 3], [WALK_TURN[side] * ROOMK, wy], [ax, wy], [ax, seatY], [seatX, seatY]];
     } else {
       const sx = Math.floor(doorX / 4) * 4 + 2, sy = d.floor[3] - 3;
       const cells = roomBfs(d, sx, sy, seatX, seatY);
@@ -635,7 +637,7 @@
   }
   function agEnterHall(a, seat) { // espera si alguien acaba de entrar y está en la puerta
     if (!MEET.on) { a.meetBound = false; agAfterMeeting(a); return; }
-    const d = ROOM_DEFS.hall, dx = (d.door[0] + d.door[1]) / 2, dy = d.floor[3] + 3;
+    const d = ROOM_DEFS.hall, dx = d.spawn !== undefined ? d.spawn : (d.door[0] + d.door[1]) / 2, dy = d.floor[3] + 3;
     if (AGENTS.some(o => o !== a && o.mode === 'room' && o.room === 'hall' && Math.abs(o.rx - dx) < 12 && Math.abs(o.ry - dy) < 14)) { agWait(a, 0.5, () => agEnterHall(a, seat)); return; }
     a.meetBound = false; a.seat = seat; agEnterRoom(a, 'hall');
   }
@@ -803,7 +805,7 @@
   }
   function drawAgentRoom(c, a) { // dentro de su habitación; sentado, las piernas quedan tapadas por el mueble
     const s = agSeat(a), clipY = s.clip * ROOMK, sx = s.x * ROOMK;
-    if (!s.stand && Math.abs(a.rx - sx) <= 16 && a.ry >= clipY - 40) {
+    if (!s.stand && !s.noclip && Math.abs(a.rx - sx) <= 16 && a.ry >= clipY - 40) {
       c.save(); c.beginPath(); c.rect(0, 0, ROOM_W, clipY); c.clip();
       drawAgentAt(c, a, a.rx, a.ry, a.face, a.moving);
       c.restore();
@@ -1575,22 +1577,26 @@
   // En el juego la habitación mide 512×288 unidades: una persona de pie (24) es 1/12 del alto, como pediste.
   const ROOM_W = 512, ROOM_H = 288;
   const ROOM_SRC = {
-    hall: { file: 'rooms/hall.jpg', floor: [105, 150, 1585, 885], door: [765, 915], solids: [[660, 170, 1020, 815], [105, 415, 212, 700], [1160, 25, 1320, 175]] },
-    1: { file: 'rooms/banco.jpg', floor: [45, 145, 1625, 885], door: [770, 905], solids: [[165, 270, 432, 500], [715, 218, 1440, 385], [55, 50, 155, 190], [1520, 50, 1625, 190], [55, 755, 155, 890], [1515, 755, 1625, 890]] },
-    2: { file: 'rooms/bolsa.jpg', floor: [30, 140, 1650, 890], door: [770, 910], solids: [[118, 195, 372, 420], [603, 190, 862, 420], [715, 590, 968, 815], [430, 140, 532, 308], [940, 140, 1037, 308], [1550, 225, 1647, 392], [430, 655, 532, 822], [1105, 655, 1205, 822], [1468, 655, 1567, 822], [118, 548, 332, 760], [1155, 240, 1462, 492]] },
-    3: { file: 'rooms/archivo.jpg', floor: [70, 155, 1610, 885], door: [790, 890], solids: [[303, 368, 530, 595], [798, 228, 892, 352], [1095, 220, 1198, 392], [873, 490, 1085, 708], [1330, 262, 1525, 442], [1330, 582, 1525, 762], [78, 108, 128, 225], [1545, 108, 1597, 225], [78, 738, 128, 852], [1545, 738, 1597, 852], [985, 100, 1040, 205]] },
-    4: { file: 'rooms/correo.jpg', floor: [85, 160, 1590, 895], door: [785, 865], solids: [[123, 530, 1222, 742], [1145, 185, 1462, 428]] },
-    6: { file: 'rooms/metaads.jpg', floor: [25, 140, 1650, 880], door: [790, 890], solids: [[130, 125, 350, 330], [85, 360, 295, 555], [470, 135, 570, 330], [565, 360, 668, 568], [470, 570, 572, 778], [665, 172, 785, 252], [60, 515, 135, 660], [62, 678, 148, 850], [212, 685, 382, 850], [1160, 262, 1450, 585], [1505, 100, 1615, 295], [1563, 462, 1648, 620], [1272, 760, 1440, 850], [40, 55, 128, 205], [1540, 700, 1640, 850]] },
-    7: { file: 'rooms/promotora.jpg', floor: [40, 150, 1640, 880], door: [775, 895], solids: [[230, 295, 505, 590], [888, 278, 1325, 590], [48, 213, 125, 665], [1555, 213, 1632, 665], [1415, 192, 1505, 382], [1195, 665, 1282, 828], [1345, 635, 1415, 828], [48, 45, 135, 195], [1545, 45, 1635, 195], [48, 722, 135, 865], [1545, 722, 1635, 865]] },
-    8: { file: 'rooms/tierras.jpg', floor: [55, 195, 1635, 880], door: [770, 905], solids: [[90, 45, 290, 255], [1150, 35, 1410, 195], [1520, 35, 1630, 215], [415, 235, 520, 420], [113, 350, 265, 555], [362, 493, 655, 740], [72, 613, 190, 780], [1075, 330, 1350, 605], [1515, 205, 1600, 395], [1542, 378, 1632, 615], [1525, 645, 1635, 825]] },
-    9: { file: 'rooms/express.jpg', floor: [30, 200, 1645, 880], door: [785, 895], solids: [[180, 232, 478, 500], [45, 622, 178, 825], [180, 675, 265, 820], [38, 115, 115, 265], [1128, 165, 1415, 270], [1503, 105, 1645, 270], [1100, 435, 1545, 612], [1500, 418, 1645, 598], [1190, 700, 1560, 848], [1562, 738, 1645, 880]] },
-    10: { file: 'rooms/mansion.jpg', floor: [45, 230, 1635, 885], door: [775, 905], solids: [[675, 215, 1005, 515], [750, 105, 930, 240], [160, 195, 255, 335], [1458, 185, 1540, 290], [170, 625, 450, 858], [1188, 635, 1440, 785], [1228, 772, 1405, 858], [1482, 665, 1600, 810], [292, 150, 350, 230], [1325, 150, 1385, 230]] },
-    5: { file: 'rooms/gaceta.jpg', floor: [30, 255, 1650, 890], door: [775, 890], solids: [[200, 400, 455, 655], [1088, 283, 1432, 565], [1472, 338, 1612, 522], [1455, 525, 1642, 652], [1148, 640, 1292, 817], [1290, 640, 1422, 817], [1455, 705, 1642, 868], [40, 678, 118, 858], [40, 392, 118, 522], [125, 758, 232, 852], [1530, 180, 1632, 330], [150, 255, 262, 285]] },
+    hall: { file: 'rooms/m_hall.jpg', spawn: 735, floor: [150, 200, 1530, 795], door: [665, 1010], solids: [[570, 205, 1110, 705], [795, 690, 890, 790], [120, 195, 345, 410], [55, 385, 175, 670], [1335, 195, 1565, 410], [1505, 385, 1625, 670], [420, 90, 535, 200], [1145, 90, 1260, 200]] },
+    11: { file: 'rooms/m_knock.jpg', floor: [130, 255, 1560, 845], door: [620, 1055], solids: [[80, 40, 455, 600], [1240, 0, 1680, 545], [660, 265, 1020, 405], [575, 430, 1130, 735], [440, 120, 530, 315], [1150, 120, 1225, 315], [0, 570, 140, 705], [1545, 540, 1680, 705], [235, 800, 600, 935], [1090, 800, 1450, 935], [175, 730, 245, 940], [1435, 730, 1500, 940]] },
+    12: { file: 'rooms/m_sacc.jpg', floor: [120, 265, 1580, 790], door: [640, 1040], solids: [[600, 235, 1085, 425], [10, 330, 610, 690], [0, 400, 130, 700], [1200, 290, 1600, 610], [1560, 350, 1680, 620], [1360, 600, 1680, 720], [0, 600, 300, 720], [250, 715, 540, 935], [1140, 715, 1415, 935], [530, 660, 635, 940], [1050, 660, 1145, 940], [300, 20, 600, 320]] },
+    1: { file: 'rooms/m_banco.jpg', floor: [190, 345, 1495, 880], door: [705, 975], solids: [[655, 430, 1025, 580], [190, 40, 475, 440], [1170, 40, 1560, 420], [1455, 120, 1560, 500], [130, 280, 210, 470], [0, 540, 175, 700], [1480, 520, 1680, 700], [130, 600, 515, 944], [1175, 600, 1560, 944], [515, 690, 705, 944], [975, 690, 1175, 944], [690, 40, 1000, 340]] },
+    2: { file: 'rooms/m_bolsa.jpg', floor: [130, 300, 1560, 830], door: [690, 990], solids: [[635, 340, 1040, 500], [140, 385, 440, 655], [155, 200, 330, 400], [1285, 150, 1470, 430], [1450, 240, 1530, 400], [0, 0, 160, 944], [1550, 0, 1680, 944], [0, 450, 130, 700], [0, 730, 275, 944], [1410, 730, 1680, 944], [265, 830, 545, 944], [1130, 830, 1420, 944], [545, 740, 690, 944], [990, 740, 1135, 944]] },
+    3: { file: 'rooms/m_archivo.jpg', floor: [260, 400, 1420, 880], door: [670, 1010], solids: [[635, 390, 1045, 520], [140, 140, 300, 540], [0, 520, 260, 700], [1420, 520, 1680, 700], [0, 690, 470, 944], [1220, 690, 1680, 944], [455, 700, 670, 944], [1010, 700, 1235, 944], [300, 0, 1380, 400]] },
+    4: { file: 'rooms/m_correo.jpg', floor: [130, 400, 1560, 800], door: [705, 975], solids: [[620, 395, 1060, 595], [230, 280, 560, 485], [0, 400, 190, 640], [1480, 400, 1680, 640], [595, 695, 705, 944], [975, 695, 1090, 944], [505, 765, 600, 890], [1085, 765, 1170, 890], [0, 640, 200, 944], [1480, 640, 1680, 944], [170, 800, 600, 944], [1090, 800, 1520, 944], [580, 150, 1110, 350]] },
+    6: { file: 'rooms/m_metaads.jpg', floor: [140, 440, 1540, 800], door: [685, 995], solids: [[640, 480, 1025, 625], [100, 430, 330, 545], [1350, 430, 1590, 545], [120, 545, 385, 715], [1295, 540, 1565, 715], [0, 520, 110, 720], [1580, 520, 1680, 720], [515, 710, 690, 944], [995, 710, 1165, 944], [200, 770, 515, 890], [1165, 770, 1480, 890], [0, 700, 200, 944], [1480, 700, 1680, 944], [270, 330, 350, 480], [1340, 330, 1410, 480], [690, 330, 1000, 470]] },
+    7: { file: 'rooms/m_promotora.jpg', floor: [60, 300, 1620, 770], door: [640, 1040], solids: [[655, 300, 1025, 415], [80, 395, 610, 720], [1190, 500, 1450, 700], [1250, 340, 1530, 640], [90, 300, 400, 460], [1285, 300, 1580, 450], [430, 0, 560, 360], [1145, 0, 1280, 360], [0, 150, 75, 440], [1610, 150, 1680, 440], [545, 750, 625, 944], [1065, 750, 1135, 944], [400, 760, 545, 944], [1135, 760, 1290, 944], [0, 740, 400, 944], [1280, 740, 1680, 944]] },
+    8: { file: 'rooms/m_tierras.jpg', floor: [140, 255, 1550, 830], door: [640, 1045], solids: [[40, 250, 515, 610], [1245, 60, 1680, 500], [360, 120, 620, 300], [1065, 130, 1230, 300], [655, 340, 1025, 475], [1535, 390, 1680, 720], [0, 560, 130, 720], [575, 720, 635, 944], [1045, 720, 1110, 944], [435, 730, 575, 944], [1105, 730, 1245, 944], [0, 690, 300, 944], [1380, 690, 1680, 944]] },
+    9: { file: 'rooms/m_express.jpg', floor: [220, 300, 1440, 790], door: [665, 1025], solids: [[585, 300, 1100, 495], [0, 0, 405, 700], [395, 170, 505, 305], [1380, 90, 1680, 545], [1315, 420, 1590, 705], [595, 700, 670, 945], [1030, 700, 1090, 945], [480, 740, 600, 940], [1080, 740, 1200, 940]] },
+    90: { file: 'rooms/express.jpg', floor: [30, 200, 1645, 880], door: [785, 895], solids: [[180, 232, 478, 500], [45, 622, 178, 825], [180, 675, 265, 820], [38, 115, 115, 265], [1128, 165, 1415, 270], [1503, 105, 1645, 270], [1100, 435, 1545, 612], [1500, 418, 1645, 598], [1190, 700, 1560, 848], [1562, 738, 1645, 880]] },
+    10: { file: 'rooms/m_mansion.jpg', floor: [180, 310, 1500, 850], door: [695, 985], solids: [[680, 335, 1000, 480], [30, 360, 445, 705], [0, 200, 155, 765], [200, 130, 315, 415], [1270, 335, 1680, 765], [520, 740, 635, 945], [1050, 740, 1165, 945], [100, 730, 225, 835], [1470, 730, 1575, 835]] },
+    100: { file: 'rooms/mansion.jpg', floor: [45, 230, 1635, 885], door: [775, 905], solids: [[675, 215, 1005, 515], [750, 105, 930, 240], [160, 195, 255, 335], [1458, 185, 1540, 290], [170, 625, 450, 858], [1188, 635, 1440, 785], [1228, 772, 1405, 858], [1482, 665, 1600, 810], [292, 150, 350, 230], [1325, 150, 1385, 230]] },
+    5: { file: 'rooms/m_gaceta.jpg', floor: [130, 300, 1560, 830], door: [690, 990], solids: [[620, 320, 1065, 470], [70, 385, 515, 690], [0, 200, 70, 700], [0, 290, 425, 420], [1225, 415, 1600, 670], [1255, 280, 1620, 420], [525, 760, 690, 944], [995, 760, 1135, 944], [0, 700, 330, 944], [1350, 700, 1680, 944], [470, 200, 620, 320], [1060, 200, 1210, 320]] },
   };
   const ROOM_DEFS = {};
   for (const key in ROOM_SRC) {
     const s = ROOM_SRC[key], k = ROOM_W / 1680;
-    ROOM_DEFS[key] = { file: s.file, floor: s.floor.map(v => v * k), door: s.door.map(v => v * k), solids: s.solids.map(r => r.map(v => v * k)), ready: false, loading: false };
+    ROOM_DEFS[key] = { file: s.file, spawn: s.spawn !== undefined ? s.spawn * k : undefined, floor: s.floor.map(v => v * k), door: s.door.map(v => v * k), solids: s.solids.map(r => r.map(v => v * k)), ready: false, loading: false };
   }
   function loadRoom(I) { // la imagen se carga al entrar y se suelta al salir, para no gastar memoria
     const d = I.def;
@@ -2025,7 +2031,7 @@
     } else if (!pending) exitBuilding();
   }
   function startUserLeave() {
-    const d = ROOM_DEFS.hall, ax = AISLE_X.left * ROOMK, wy = WALK_Y * ROOMK, dx = (d.door[0] + d.door[1]) / 2;
+    const d = ROOM_DEFS.hall, ax = AISLE_X.left * ROOMK, wy = WALK_Y * ROOMK, dx = d.spawn !== undefined ? d.spawn : (d.door[0] + d.door[1]) / 2;
     MEET.userLeaving = true;
     auto = { pts: [[headX(), headRestY()], [ax, headRestY()], [ax, wy], [dx, wy], [dx, d.floor[3] + 9]], done: () => { MEET.userSeated = false; MEET.userLeaving = false; } };
   }
@@ -2073,7 +2079,7 @@
     go(() => {
       scene = 'interior'; curInterior = INTERIORS[key]; enteredFrom = door;
       const d = curInterior.def;
-      if (d) { px = (d.door[0] + d.door[1]) / 2; py = d.floor[3] - 3; loadRoom(curInterior); }
+      if (d) { px = d.spawn !== undefined ? d.spawn : (d.door[0] + d.door[1]) / 2; py = d.floor[3] - 3; loadRoom(curInterior); }
       else { px = 7 * T + 8; py = 9 * T + 14; }
       face = 'up';
       resetView('interior');
@@ -2294,6 +2300,7 @@
     agentOk: (id, tx, ty) => { const a = AGENTS.find(q => q.def.id === id); return agOk(a, tx, ty); },
     seatsFree: () => AGENTS.map(a => { const d = ROOM_DEFS[String(a.def.house)], pl = agRoomPlan(a); return { id: a.def.id, points: pl.pts.length, last: pl.pts[pl.pts.length - 1].map(Math.round), pathFree: pl.pts.slice(0, -1).every(p => canStandRoom(p[0], p[1], d)) }; }),
     meetAt: (ia, ib) => { const a = AGENTS.find(q => q.def.id === ia), b = AGENTS.find(q => q.def.id === ib); [a, b].forEach((q, i) => { q.mode = 'world'; q.x = 20 * T + 8 + i * 12; q.y = 12 * T + 10; q.path = []; q.st = 'wait'; q.timer = 99; q.onWait = null; q.talkUntil = 0; q.summoned = false; }); ENC.next = 0; },
+    spawnOk: () => Object.keys(ROOM_DEFS).map(k => { const d = ROOM_DEFS[k]; return k + ':' + (canStandRoom(d.spawn !== undefined ? d.spawn : (d.door[0] + d.door[1]) / 2, d.floor[3] - 3, d) ? 'ok' : 'BLOQ'); }),
     forceLeaveSeats: () => AGENTS.forEach(a => { if (a.st === 'seated') a.timer = 0; }),
   };
 })();

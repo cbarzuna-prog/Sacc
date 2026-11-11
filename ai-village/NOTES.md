@@ -144,3 +144,10 @@ Pendiente (arte, necesita el sí del usuario antes de generar): hojas de caminat
 - Llegaron Flash Ticker (`m_bolsa.png`) y Capitán Balance (`m_banco.png`) en alta calidad, con sus carteles ajustados. Ya hay 12 de 13; falta solo Doctora Archivo (`archivo`, aún con miniatura).
 - Llegó Doctora Archivo (`m_archivo.png`, 1400×1130, cartel ajustado). **Las 13 casas de la villa moderna ya están en alta calidad.**
 - Interiores modernos (13) y 3 hojas de objetos generados en Canva (2026-11-12): pendientes de que el usuario los descargue en grande para medir suelo, puerta, muebles y silla de cada habitación. Canva gastado en la línea moderna: ~42 acciones.
+
+### Interiores modernos (2026-11-12)
+- Recibidos y medidos (1680×944, `rooms/m_*.jpg`): ayuntamiento (reuniones), SACC, Knock Knock, mansión de Capitán Humano y Mensajero Imparable. Suelo, puerta, muebles y asiento medidos y probados (colisiones y reunión completa: 10 sentados en la mesa nueva, cabecera para el usuario y trabajadores de pie junto a las paredes).
+- Segunda tanda recibida y medida: Piedra Angular, Luz Narradora, Capitán Eslogan, Detectora Fuente y Cartero Relámpago (en Correo la silla está delante del escritorio: el director se ve de espaldas, sin recorte). Ya hay 10 de 13 interiores modernos. Llegaron y se midieron también Capitán Balance, Flash Ticker y Doctora Archivo: **los 13 interiores modernos están en el juego** (las habitaciones del Oeste quedan como respaldo en `rooms/*.jpg`).
+- El ayuntamiento tiene una silla al pie justo frente a la puerta: la entrada de esa sala usa un punto de aparición desplazado (`spawn`) para no quedar dentro de la silla.
+- Los dos héroes de Knock Knock y SACC aún no existen: sus habitaciones están vacías.
+- Hojas de objetos modernos: generadas en Canva, falta recortar (3 acciones) y cortar en objetos.
