@@ -797,7 +797,7 @@
   function drawAgentAt(c, a, x, y, face, moving) {
     const img = a.sp.levels && a.sp.levels[0];
     if (!a.sp.ready || !img) return;
-    const k = AG_UPP, col = moving ? AG_FRAMES[Math.floor(a.walkT * 5.5) % 4] : 1, row = AG_ROW[face] ?? 0;
+    const k = AG_UPP * (a.def.sprScale || 1), col = moving ? AG_FRAMES[Math.floor(a.walkT * 5.5) % 4] : 1, row = AG_ROW[face] ?? 0; // sprScale: hojas dibujadas más pequeñas dentro de su celda
     shadow(c, x, y, 6.2, 2.1);
     if (a.powering || a.powerUntil > time) drawPowerAura(c, a, x, y);
     c.imageSmoothingEnabled = k * scaleOf() * dpr < 1; c.imageSmoothingQuality = 'high';

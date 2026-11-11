@@ -77,14 +77,14 @@ window.DIRECTORS = [
     chief: true,
   },
   {
-    id: 'knock', folder: 'knock', house: 11, name: 'Llave Maestra', was: 'Ignacio Barrantes', role: 'Director de Knock Knock (bienes raíces)',
+    id: 'knock', folder: 'knock', house: 11, name: 'Llave Maestra', sprScale: 1.15, was: 'Ignacio Barrantes', role: 'Director de Knock Knock (bienes raíces)',
     hero: 'Llave Maestra', power: { name: 'Puertas Abiertas', text: 'Conocimiento infinito de bienes raíces: busca sin parar herramientas, datos y tendencias del mercado del GAM para que cada venta encuentre su puerta.', color: '216,170,60' }, heroLook: 'Traje color madera y blanco con detalles dorados, capa blanca, una llave dorada gigante a la espalda y una aldaba brillante en el pecho.',
     personality: 'Súper vendedor: carismático, curioso y directo; siempre sabe algo nuevo del mercado.',
     quirk: 'Toca dos veces antes de entrar a cualquier lugar ("toc, toc") y gira una llave dorada entre los dedos cuando piensa.',
     look: 'Hombre de unos 35 años, pelo castaño bien peinado y sonrisa segura; traje color madera con camisa blanca, llave dorada colgada al cuello.',
   },
   {
-    id: 'sacc', folder: 'sacc', house: 12, name: 'Maestro Revés', was: 'Rodolfo Zamora', role: 'Director de SACC (club social)',
+    id: 'sacc', folder: 'sacc', house: 12, name: 'Maestro Revés', sprScale: 1.16, was: 'Rodolfo Zamora', role: 'Director de SACC (club social)',
     hero: 'Maestro Revés', power: { name: 'Círculo de Confianza', text: 'Conocimiento infinito de clubes sociales: estudia sin parar los clubes de Costa Rica para que cada membresía de SACC valga más.', color: '120,200,90' }, heroLook: 'Traje blanco de tenis con detalles verde cancha y dorado, diadema, capa verde claro, raqueta dorada en la mano y emblema de raqueta y pelota.',
     personality: 'Elegante, sereno y preciso; mantiene la calma bajo presión y piensa un golpe adelante.',
     quirk: 'Hace girar su raqueta dorada entre los dedos y repite "un punto a la vez" antes de decidir.',
