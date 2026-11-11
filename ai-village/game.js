@@ -297,7 +297,7 @@
   const MNAME = { banco: 'CAPITÁN BALANCE', bolsa: 'FLASH TICKER', archivo: 'DOCTORA ARCHIVO', correo: 'CARTERO RELÁMPAGO', gaceta: 'DETECTORA FUENTE', metaads: 'CAPITÁN ESLOGAN', promotora: 'LUZ NARRADORA', tierras: 'PIEDRA ANGULAR', express: 'MENSAJERO IMPARABLE', mansion: 'CAPITÁN HUMANO', hall: 'COMANDANTE CINTA', knock: 'KNOCK KNOCK', sacc: 'SACC' };
   // cartel en blanco de cada casa, como fracción del lienzo: [x, y, ancho, alto]
   const MPLATE = {
-    banco: [.421, .672, .164, .05], bolsa: [.436, .722, .131, .038], archivo: [.408, .629, .184, .054], correo: [.395, .64, .21, .058], gaceta: [.413, .671, .174, .047],
+    banco: [.421, .672, .164, .05], bolsa: [.436, .722, .131, .038], archivo: [.407, .622, .193, .066], correo: [.395, .64, .21, .058], gaceta: [.413, .671, .174, .047],
     metaads: [.417, .623, .166, .062], promotora: [.417, .646, .166, .054], tierras: [.408, .621, .184, .066], express: [.417, .629, .166, .063], mansion: [.417, .623, .166, .058],
     hall: [.408, .623, .184, .058], knock: [.40, .648, .2, .058], sacc: [.40, .605, .2, .065],
   };
